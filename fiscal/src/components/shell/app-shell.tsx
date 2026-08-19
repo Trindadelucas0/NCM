@@ -2,15 +2,54 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import { ACTIVE_LOTE_EVENT, hrefWithLote, readActiveLote } from "@/src/lib/active-lote";
 import { Button } from "@/src/components/ui/button";
+import {
+  IconBaseFiscal,
+  IconComoUsar,
+  IconConsultar,
+  IconDivergencias,
+  IconEmpresas,
+  IconImportar,
+  IconPanorama,
+  IconUsuarios,
+} from "./nav-icons";
 
-const NAV = [
-  { href: "/dashboard", label: "Panorama" },
-  { href: "/consulta", label: "Consultar" },
-  { href: "/divergencias", label: "Divergências" },
-  { href: "/base-fiscal", label: "Base fiscal" },
-  { href: "/importar", label: "Importar", admin: true },
+type NavItem = {
+  href: string;
+  label: string;
+  admin?: boolean;
+  icon: ComponentType<{ className?: string }>;
+};
+
+const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
+  {
+    id: "visao",
+    label: "Visão",
+    items: [
+      { href: "/dashboard", label: "Panorama", icon: IconPanorama },
+      { href: "/como-usar", label: "Como usar", icon: IconComoUsar },
+    ],
+  },
+  {
+    id: "cadastro",
+    label: "Cadastro",
+    items: [
+      { href: "/consulta", label: "Consultar", icon: IconConsultar },
+      { href: "/divergencias", label: "Divergências", icon: IconDivergencias },
+      { href: "/base-fiscal", label: "Base fiscal", icon: IconBaseFiscal },
+      { href: "/importar", label: "Importar produtos", admin: true, icon: IconImportar },
+    ],
+  },
+  {
+    id: "escritorio",
+    label: "Escritório",
+    items: [
+      { href: "/empresas", label: "Empresas", admin: true, icon: IconEmpresas },
+      { href: "/usuarios", label: "Usuários", admin: true, icon: IconUsuarios },
+    ],
+  },
 ];
 
 type Me = {
@@ -20,12 +59,24 @@ type Me = {
   companyName: string;
 };
 
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState("");
+  const [lote, setLote] = useState("");
+
+  useEffect(() => {
+    const sync = () => setLote(readActiveLote() ?? "");
+    sync();
+    window.addEventListener(ACTIVE_LOTE_EVENT, sync);
+    return () => window.removeEventListener(ACTIVE_LOTE_EVENT, sync);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -49,85 +100,136 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => controller.abort();
   }, [router]);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
   }
 
-  const links = NAV.filter((item) => !item.admin || me?.role === "admin");
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.admin || me?.role === "admin"),
+  })).filter((group) => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen min-w-0 bg-paper">
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-3 focus:py-2">
         Ir para o conteúdo
       </a>
-      <header className="sticky top-0 z-30 border-b border-line bg-paper-raised/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 border-b border-line bg-paper-raised/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-3 py-2 sm:px-4">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-line bg-white md:hidden"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md border border-line bg-white md:hidden"
               aria-expanded={open}
               aria-controls="menu-principal"
               onClick={() => setOpen((v) => !v)}
             >
-              <span className="sr-only">Menu</span>
+              <span className="sr-only">{open ? "Fechar menu" : "Abrir menu"}</span>
               <span className="flex flex-col gap-1" aria-hidden>
                 <span className="block h-0.5 w-5 bg-ink" />
                 <span className="block h-0.5 w-5 bg-ink" />
                 <span className="block h-0.5 w-5 bg-ink" />
               </span>
             </button>
-            <Link href="/dashboard" className="leading-tight">
+            <Link href={hrefWithLote("/dashboard", lote)} className="min-w-0 leading-tight">
               <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
                 Escritório
               </span>
-              <span className="font-display text-lg text-brand">Auditor Fiscal</span>
+              <span className="block truncate font-display text-base text-brand sm:text-lg">
+                Auditor Fiscal
+              </span>
             </Link>
           </div>
-          <div className="hidden items-center gap-3 text-sm md:flex">
-            <div className="text-right">
-              <p className="font-medium text-ink">{me?.companyName ?? "BAIFER"}</p>
-              <p className="text-ink-muted">{me ? `${me.name} · ${me.role}` : "…"}</p>
+          <div className="flex min-w-0 items-center gap-3 text-sm">
+            <div className="min-w-0 text-right">
+              <p className="truncate font-medium text-ink">{me?.companyName ?? "…"}</p>
+              <p className="hidden truncate text-ink-muted sm:block">
+                {me ? `${me.name} · ${me.role}` : "…"}
+              </p>
             </div>
-            <Button variant="secondary" onClick={logout}>
+            <Button variant="secondary" className="hidden shrink-0 md:inline-flex" onClick={logout}>
               Sair
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1600px]">
+      {open ? (
+        <button
+          type="button"
+          className="fixed inset-x-0 bottom-0 top-14 z-40 bg-ink/40 md:hidden"
+          aria-label="Fechar menu"
+          onClick={() => setOpen(false)}
+        />
+      ) : null}
+
+      <div className="mx-auto flex w-full min-w-0 max-w-[1600px] flex-col md:flex-row md:items-stretch">
         <nav
           id="menu-principal"
-          className={`${open ? "block" : "hidden"} w-full border-b border-line bg-white px-4 py-3 md:block md:w-56 md:border-b-0 md:border-r md:bg-transparent md:py-8`}
+          aria-label="Principal"
+          className={`${
+            open
+              ? "fixed left-0 top-14 z-50 flex max-h-[calc(100dvh-3.5rem)] w-[min(18rem,88vw)]"
+              : "hidden"
+          } flex-col overflow-y-auto border-r border-line bg-paper-raised px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-panel md:sticky md:top-14 md:z-auto md:flex md:h-[calc(100dvh-3.5rem)] md:w-60 md:max-h-none md:shrink-0 md:self-start md:shadow-none`}
         >
-          <ul className="grid gap-1">
-            {links.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={`block rounded-md px-3 py-2.5 text-sm ${
-                      active ? "bg-brand text-white" : "text-ink hover:bg-white"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="mt-4 md:hidden">
+          <div className="grid content-start gap-5">
+            {groups.map((group) => (
+              <div key={group.id}>
+                <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+                  {group.label}
+                </p>
+                <ul className="grid content-start gap-1">
+                  {group.items.map((item) => {
+                    const active = isActivePath(pathname, item.href);
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={hrefWithLote(item.href, lote)}
+                          aria-current={active ? "page" : undefined}
+                          onClick={() => setOpen(false)}
+                          className={`flex min-h-11 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition ${
+                            active
+                              ? "bg-brand text-white"
+                              : "text-ink hover:bg-white"
+                          }`}
+                        >
+                          <Icon className="shrink-0" />
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="mt-auto pt-6 md:hidden">
+            <p className="mb-3 truncate px-3 text-sm text-ink-muted">
+              {me ? `${me.name} · ${me.role}` : ""}
+            </p>
             <Button variant="secondary" className="w-full" onClick={logout}>
               Sair
             </Button>
           </div>
         </nav>
-        <main id="conteudo" className="min-w-0 flex-1 px-4 py-6 sm:px-8">
+        <main id="conteudo" className="min-w-0 w-full flex-1 px-3 py-4 sm:px-6 sm:py-6 md:px-8">
           {error ? <p className="mb-4 text-sm text-status-bad">{error}</p> : null}
           {children}
         </main>

@@ -1,5 +1,3 @@
-import "server-only";
-
 import { mvaRequiresAnalysis, normalizeCst } from "./ncm";
 import {
   DESTINO_KEYS,

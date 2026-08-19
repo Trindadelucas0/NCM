@@ -10,6 +10,9 @@ O Auditor Fiscal BAIFER é um sistema interno do escritório. Ele **não substit
   - As duas **não se misturam**
 - Permite **importar** várias planilhas; cada arquivo vira um lote no histórico, sem misturar. Em Panorama, Consulta e Divergências dá para **escolher a planilha** e ver só os dados dela.
 - Classifica cada produto como **correto**, **divergente** ou **necessita análise**.
+- Em **Divergências**, mostra primeiro **quantos NCMs** estão errados; um clique filtra a grade.
+- Compara a planilha nova com a **anterior** (códigos novos, que saíram, NCM ou situação que mudou).
+- Permite marcar produto ou NCM como **já tratado**. Na próxima importação dá para **trazer essas marcas** (ou começar do zero).
 - Mostra a **matriz dos 8 destinatários** (não um CST único).
 - Exporta **PDF e Excel** no formato da planilha: grade completa, detalhe do que está errado, e Excel separado por regra NCM.
 - Orienta **como dar entrada** só com o que existe na regra — sem inventar CFOP de entrada, CEST ou PIS/COFINS.
@@ -26,7 +29,7 @@ O Auditor Fiscal BAIFER é um sistema interno do escritório. Ele **não substit
 Somente a equipe do escritório, com login. Há dois papéis:
 
 - **Administrador:** importa cadastro e vincula regra quando o NCM tem duas hipóteses.
-- **Consulta:** lê, busca e exporta Excel/PDF.
+- **Consulta:** lê, busca, exporta Excel/PDF e marca item/NCM como já tratado.
 
 ## Como os dados são protegidos
 
@@ -40,7 +43,7 @@ Somente a equipe do escritório, com login. Há dois papéis:
 1. Entrar no sistema.
 2. Conferir a **Base fiscal** (já vem preenchida após a instalação).
 3. **Importar** o cadastro atual da BAIFER (export Santri *Relação de Classes Fiscais*, arquivo `bs.xlsx`). Isso **não** é a base fiscal — é o cadastro a ser auditado. Cada arquivo fica no histórico; use **Ver conferência** ou o seletor **Ver dados desta planilha** para olhar só aquele arquivo.
-4. Abrir **Divergências** e a ficha do produto.
+4. Abrir **Divergências**, filtrar pelo NCM e marcar o que já foi ajustado no ERP.
 5. Em NCM com ST e REDUÇÃO, o administrador **vincula** a regra correta.
 
 ## Expansão

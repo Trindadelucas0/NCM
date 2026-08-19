@@ -12,8 +12,8 @@ Credenciais **somente** em `.env` (`DATABASE_URL`, `DB_*`). Nenhuma variável `N
 | `companies` | Empresa (BAIFER no seed) |
 | `users` | E-mail, hash bcrypt, papel `admin` ou `consulta` |
 | `sessions` | Token hasheado, expiração |
-| `fiscal_ncm_rules` | Uma linha por NCM + situação; JSON dos 8 CSTs |
-| `products` | Cadastro importado (sempre ligado a um lote) |
+| `fiscal_ncm_rules` | Uma linha por NCM + situação (`company_id, ncm, situacao_codigo` unique) |
+| `products` | Cadastro importado (sempre ligado a um lote); `audit_status`, `treated_at` |
 | `product_rule_links` | Vínculo produto → regra (NCM duplicado) |
 | `import_batches` | Histórico de cada planilha (arquivo, data, totais da conferência) |
 
@@ -26,4 +26,6 @@ A conexão local usa o papel `postgres` (superuser), que **bypassa RLS**. Em pro
 
 ## Seed
 
-Empresa BAIFER + admin + consulta + regras da aba BAIFER. **Zero produtos.**
+Empresa BAIFER + Loja + admin + consulta + regras. **Não apaga lotes.**  
+Usuário já existente não tem senha resetada. Regras são atualizadas no lugar (o id permanece para não quebrar vínculo).  
+Wipe explícito do cadastro: `SEED_RESET_CADASTRO=1 npm run db:seed`.

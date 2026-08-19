@@ -124,6 +124,20 @@ export async function resolveActiveBatch(
   };
 }
 
+export async function findPreviousBatch(companyId: string, currentBatchId: string) {
+  const current = await requireOwnedBatch(companyId, currentBatchId);
+  return withTenant(companyId, (db) =>
+    db.importBatch.findFirst({
+      where: {
+        companyId,
+        createdAt: { lt: current.createdAt },
+        NOT: { id: current.id },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  );
+}
+
 export async function activeBatchForRequest(companyId: string, request: Request) {
   const url = new URL(request.url);
   const queryLote = (url.searchParams.get("lote") ?? url.searchParams.get("batchId") ?? "").trim();

@@ -6,12 +6,15 @@
   color-scheme: light;
 }
 
-html,
-body {
+html {
   min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
+  min-height: 100%;
+  overflow-x: hidden;
   background: #f4f1ea;
   color: #1a1f24;
 }
@@ -27,7 +30,9 @@ body {
 
 .fiscal-grid-wrap {
   overflow: auto;
+  max-width: 100%;
   max-height: min(70vh, 44rem);
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #d9d3c7;
   border-radius: 8px;
   background: #fffdf8;
@@ -102,6 +107,13 @@ body {
 
 .fiscal-grid .sticky-col-3 {
   left: 20.75rem;
+}
+
+@media (max-width: 1023px) {
+  .fiscal-grid .sticky-col-3 {
+    position: static;
+    left: auto;
+  }
 }
 
 @media (max-width: 767px) {

@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
+import {
+  classifyRuleSync,
+  shouldWipeCadastro,
+  seedDeletionPlan,
+} from "../src/server/seed-policy";
 
 config();
 
@@ -94,68 +99,134 @@ function loadRules(file: string, expectedCompany: string): ExtractedFile {
   return raw;
 }
 
-async function seedCompany(spec: CompanySeed, passwordHash: string) {
+function ruleData(spec: CompanySeed, rule: ExtractedRule) {
+  return {
+    companyId: spec.id,
+    ncm: rule.ncm,
+    ncmOriginal: rule.ncmOriginal,
+    segmento: rule.segmento,
+    cstEntrada: rule.cstEntrada,
+    cstSaida: rule.cstSaida,
+    cfopSaida: rule.cfopSaida,
+    destinosCst: rule.destinosCst,
+    situacao: rule.situacao,
+    situacaoCodigo: rule.situacaoCodigo,
+    mvaPercentual: rule.mvaPercentual,
+    mvaTexto: rule.mvaTexto,
+    mvaKind: rule.mvaKind,
+    observacao: rule.observacao,
+  };
+}
+
+async function ensureUser(
+  spec: CompanySeed,
+  id: string,
+  email: string,
+  name: string,
+  role: "admin" | "consulta",
+  passwordHash: string,
+) {
+  const existing = await prisma.user.findFirst({
+    where: { companyId: spec.id, email },
+  });
+  if (existing) return;
+  await prisma.user.create({
+    data: {
+      id,
+      companyId: spec.id,
+      email,
+      passwordHash,
+      name,
+      role,
+    },
+  });
+}
+
+async function syncRules(spec: CompanySeed, incoming: ExtractedRule[]) {
+  const existingRows = await prisma.fiscalNcmRule.findMany({
+    where: { companyId: spec.id },
+    select: {
+      id: true,
+      ncm: true,
+      situacaoCodigo: true,
+      _count: { select: { links: true } },
+    },
+  });
+  const existing = existingRows.map((row) => ({
+    id: row.id,
+    ncm: row.ncm,
+    situacaoCodigo: row.situacaoCodigo,
+    linked: row._count.links > 0,
+  }));
+  const plan = classifyRuleSync(
+    incoming.map((rule) => ({ ncm: rule.ncm, situacaoCodigo: rule.situacaoCodigo })),
+    existing,
+  );
+  const incomingByKey = new Map(
+    incoming.map((rule) => [`${rule.ncm}::${rule.situacaoCodigo}`, rule]),
+  );
+
+  for (const item of plan.toUpdate) {
+    const rule = incomingByKey.get(`${item.ncm}::${item.situacaoCodigo}`);
+    if (!rule) continue;
+    await prisma.fiscalNcmRule.update({
+      where: { id: item.id },
+      data: ruleData(spec, rule),
+    });
+  }
+  if (plan.toInsert.length > 0) {
+    await prisma.fiscalNcmRule.createMany({
+      data: plan.toInsert.map((key) => {
+        const rule = incomingByKey.get(`${key.ncm}::${key.situacaoCodigo}`);
+        if (!rule) throw new Error("Regra de insert ausente");
+        return ruleData(spec, rule);
+      }),
+    });
+  }
+  if (plan.toDelete.length > 0) {
+    await prisma.fiscalNcmRule.deleteMany({
+      where: { companyId: spec.id, id: { in: plan.toDelete.map((item) => item.id) } },
+    });
+  }
+  if (plan.toKeepOrphan.length > 0) {
+    console.warn(
+      `Seed ${spec.slug}: ${plan.toKeepOrphan.length} regra(s) com vínculo mantidas embora não estejam no JSON.`,
+    );
+  }
+  return { inserted: plan.toInsert.length, updated: plan.toUpdate.length };
+}
+
+async function seedCompany(spec: CompanySeed, passwordHash: string, wipeCadastro: boolean) {
   const raw = loadRules(spec.jsonFile, spec.slug);
   await withCompany(spec.id, async () => {
-    await prisma.productRuleLink.deleteMany({ where: { companyId: spec.id } });
-    await prisma.product.deleteMany({ where: { companyId: spec.id } });
-    await prisma.importBatch.deleteMany({ where: { companyId: spec.id } });
-    await prisma.fiscalNcmRule.deleteMany({ where: { companyId: spec.id } });
-    await prisma.session.deleteMany({ where: { companyId: spec.id } });
-    await prisma.user.deleteMany({ where: { companyId: spec.id } });
-    await prisma.company.deleteMany({ where: { id: spec.id } });
-
-    await prisma.company.create({
-      data: { id: spec.id, name: spec.name, slug: spec.slug },
-    });
-    await prisma.user.create({
-      data: {
-        id: `${spec.id}_admin`,
-        companyId: spec.id,
-        email: spec.adminEmail,
-        passwordHash,
-        name: "Administrador",
-        role: "admin",
-      },
-    });
-    await prisma.user.create({
-      data: {
-        id: `${spec.id}_consulta`,
-        companyId: spec.id,
-        email: spec.consultaEmail,
-        passwordHash,
-        name: "Consulta",
-        role: "consulta",
-      },
-    });
-
-    const chunkSize = 200;
-    for (let i = 0; i < raw.rules.length; i += chunkSize) {
-      const slice = raw.rules.slice(i, i + chunkSize);
-      await prisma.fiscalNcmRule.createMany({
-        data: slice.map((rule) => ({
-          companyId: spec.id,
-          ncm: rule.ncm,
-          ncmOriginal: rule.ncmOriginal,
-          segmento: rule.segmento,
-          cstEntrada: rule.cstEntrada,
-          cstSaida: rule.cstSaida,
-          cfopSaida: rule.cfopSaida,
-          destinosCst: rule.destinosCst,
-          situacao: rule.situacao,
-          situacaoCodigo: rule.situacaoCodigo,
-          mvaPercentual: rule.mvaPercentual,
-          mvaTexto: rule.mvaTexto,
-          mvaKind: rule.mvaKind,
-          observacao: rule.observacao,
-        })),
-      });
+    const deletion = seedDeletionPlan(wipeCadastro);
+    if (wipeCadastro) {
+      console.warn(`SEED_RESET_CADASTRO=1: apagando lotes e produtos de ${spec.slug}.`);
     }
+    if (deletion.links) {
+      await prisma.productRuleLink.deleteMany({ where: { companyId: spec.id } });
+    }
+    if (deletion.products) {
+      await prisma.product.deleteMany({ where: { companyId: spec.id } });
+    }
+    if (deletion.batches) {
+      await prisma.importBatch.deleteMany({ where: { companyId: spec.id } });
+    }
+
+    await prisma.company.upsert({
+      where: { id: spec.id },
+      create: { id: spec.id, name: spec.name, slug: spec.slug },
+      update: { name: spec.name, slug: spec.slug },
+    });
+    await ensureUser(spec, `${spec.id}_admin`, spec.adminEmail, "Administrador", "admin", passwordHash);
+    await ensureUser(spec, `${spec.id}_consulta`, spec.consultaEmail, "Consulta", "consulta", passwordHash);
+    await syncRules(spec, raw.rules);
 
     const products = await prisma.product.count({ where: { companyId: spec.id } });
     const rules = await prisma.fiscalNcmRule.count({ where: { companyId: spec.id } });
-    if (products !== 0) throw new Error(`Seed ${spec.slug} não deve criar produtos.`);
-    console.log(`Seed OK: ${spec.name} (${spec.slug}) ${rules} regras, admin ${spec.adminEmail}`);
+    console.log(
+      `Seed OK: ${spec.name} (${spec.slug}) ${rules} regras, ${products} produtos no histórico, admin ${spec.adminEmail}`,
+    );
   });
 }
 
@@ -164,11 +235,17 @@ async function main() {
   if (!password) {
     throw new Error("SEED_ADMIN_PASSWORD é obrigatório (não commitar senha no código).");
   }
+  const wipeCadastro = shouldWipeCadastro(process.env);
+  if (wipeCadastro) {
+    console.warn("ATENÇÃO: SEED_RESET_CADASTRO=1 vai apagar lotes importados. Regras e usuários permanecem.");
+  }
   const hash = await bcrypt.hash(password, 12);
   for (const spec of COMPANIES) {
-    await seedCompany(spec, hash);
+    await seedCompany(spec, hash, wipeCadastro);
   }
-  const baiferRules = await prisma.fiscalNcmRule.count({ where: { companyId: "cm_baifer_seed_company" } });
+  const baiferRules = await prisma.fiscalNcmRule.count({
+    where: { companyId: "cm_baifer_seed_company" },
+  });
   const lojaRules = await prisma.fiscalNcmRule.count({ where: { companyId: "cm_loja_seed_company" } });
   console.log(`Conferência: BAIFER ${baiferRules} regras, LOJA ${lojaRules} regras — isoladas por companyId.`);
 }

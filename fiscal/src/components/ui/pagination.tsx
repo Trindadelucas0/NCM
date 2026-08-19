@@ -24,14 +24,20 @@ export function Pagination({
     <nav className="flex flex-wrap items-center gap-2" aria-label={label}>
       {pageCount > 1 ? (
         <>
-          <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(Math.max(1, page - 1))}>
+          <Button
+            variant="secondary"
+            className="flex-1 sm:flex-none"
+            disabled={page <= 1}
+            onClick={() => onPage(Math.max(1, page - 1))}
+          >
             Anterior
           </Button>
-          <p className="text-sm text-ink-muted">
+          <p className="w-full text-center text-sm text-ink-muted sm:w-auto">
             Página {page} de {pageCount}
           </p>
           <Button
             variant="secondary"
+            className="flex-1 sm:flex-none"
             disabled={page >= pageCount}
             onClick={() => onPage(Math.min(pageCount, page + 1))}
           >
@@ -40,10 +46,10 @@ export function Pagination({
         </>
       ) : null}
       {onPageSize && pageSize ? (
-        <label className="ml-auto flex items-center gap-2 text-sm text-ink-muted">
+        <label className="flex w-full items-center gap-2 text-sm text-ink-muted sm:ml-auto sm:w-auto">
           Linhas
           <select
-            className="min-h-11 rounded-md border border-line bg-white px-2 text-sm text-ink"
+            className="min-h-11 flex-1 rounded-md border border-line bg-white px-2 text-base text-ink sm:flex-none md:text-sm"
             value={pageSize}
             onChange={(event) => onPageSize(Number(event.target.value))}
           >

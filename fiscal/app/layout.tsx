@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,11 @@ const display = Source_Serif_4({
 export const metadata: Metadata = {
   title: "Auditor Fiscal BAIFER",
   description: "Comparação do cadastro de produtos com a base NCM da BAIFER.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { compareProduct } from "@/src/server/compare";
-import { productFromDb, ruleFromDb } from "@/src/server/audit";
+import { productFromDb, ruleFromDb, syncProductAudit } from "@/src/server/audit";
 import { buildEntradaGuide } from "@/src/server/entrada";
 import { jsonError, jsonOk } from "@/src/server/http";
 import { HttpError, ownedWhere, requireAdmin, requireUser } from "@/src/server/tenant";
@@ -28,7 +28,19 @@ export async function GET(
       const mappedRules = rules.map(ruleFromDb);
       const compare = compareProduct(mappedProduct, mappedRules, link?.ruleId ?? null);
       const guide = buildEntradaGuide(compare.rule, compare, mappedProduct.ncm);
-      return { product: mappedProduct, compare, guide, rules: mappedRules, link };
+      return {
+        product: {
+          ...mappedProduct,
+          treated: Boolean(product.treatedAt),
+          treatedStale: product.treatedStale,
+          treatedNote: product.treatedNote,
+          treatedAt: product.treatedAt,
+        },
+        compare,
+        guide,
+        rules: mappedRules,
+        link,
+      };
     });
     return jsonOk(payload);
   } catch (error) {
@@ -71,6 +83,7 @@ export async function POST(
         },
       });
     });
+    await syncProductAudit(user.companyId, id);
     return jsonOk({ linked: true });
   } catch (error) {
     return jsonError(error);

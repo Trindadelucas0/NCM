@@ -34,4 +34,7 @@ export type ProductSheetItem = {
     cstSaida: string | null;
     cfopSaida: string | null;
   }[];
+  treated: boolean;
+  treatedStale: boolean;
+  treatedNote: string | null;
 };

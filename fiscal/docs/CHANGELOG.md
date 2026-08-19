@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.1.0 — 19/08/2026
+
+Adicionado:
+
+- Diff automático da planilha contra o lote anterior (novos, saíram, NCM mudou, situação mudou).
+- Agrupamento de divergências por NCM.
+- Marca “já tratado” por produto ou por NCM, com opção de trazer as marcas na próxima importação.
+
+Alterado:
+
+- Importação grava o status da conferência na hora, sem reler o cadastro inteiro depois.
+- Consulta pagina no servidor usando o status gravado.
+- Seed atualiza regras sem apagar lotes (wipe só com `SEED_RESET_CADASTRO=1`).
+
+Banco:
+
+- Unique `(company_id, ncm, situacao_codigo)` nas regras.
+- Colunas `treated_*` em produtos.
+
 ## v1.0.5 — 19/08/2026
 
 Corrigido:

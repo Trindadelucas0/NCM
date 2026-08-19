@@ -20,6 +20,9 @@ type Payload = {
     cstUnico: string | null;
     cstCompra: string | null;
     ivaMva: string | null;
+    treated: boolean;
+    treatedStale: boolean;
+    treatedNote: string | null;
   };
   compare: {
     status: StatusFiscal;
@@ -59,19 +62,48 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
   const [role, setRole] = useState<"admin" | "consulta">("consulta");
   const [saving, setSaving] = useState(false);
 
-  async function load() {
-    const res = await fetch(`/api/products/${params.id}`);
+  async function load(signal?: AbortSignal) {
+    const res = await fetch(`/api/products/${params.id}`, { signal });
     const json = await res.json();
+    if (signal?.aborted) return;
     if (!res.ok) throw new Error(json.error?.message ?? "Não encontrado");
     setData(json.data);
   }
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    const controller = new AbortController();
+    setError("");
+    setData(null);
+    fetch("/api/auth/me", { signal: controller.signal })
       .then((r) => r.json())
-      .then((json) => setRole(json.data?.role ?? "consulta"));
-    load().catch((err: Error) => setError(err.message));
+      .then((json) => setRole(json.data?.role ?? "consulta"))
+      .catch((err: Error) => {
+        if (err.name === "AbortError") return;
+      });
+    load(controller.signal).catch((err: Error) => {
+      if (err.name === "AbortError") return;
+      setError(err.message);
+    });
+    return () => controller.abort();
   }, [params.id]);
+
+  async function marcarTratado(treated: boolean) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/products/${params.id}/treated`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ treated }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Falha ao marcar");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function vincular(ruleId: string) {
     setSaving(true);
@@ -108,11 +140,15 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
         description={data.product.descricao}
         actions={
           <>
-            <Link href={`/consulta/${data.product.id}`}>
-              <Button variant={mode === "ficha" ? "primary" : "secondary"}>Ficha</Button>
+            <Link href={`/consulta/${data.product.id}`} className="w-full sm:w-auto">
+              <Button variant={mode === "ficha" ? "primary" : "secondary"} className="w-full sm:w-auto">
+                Ficha
+              </Button>
             </Link>
-            <Link href={`/como-dar-entrada/${data.product.id}`}>
-              <Button variant={mode === "entrada" ? "primary" : "secondary"}>Como dar entrada</Button>
+            <Link href={`/como-dar-entrada/${data.product.id}`} className="w-full sm:w-auto">
+              <Button variant={mode === "entrada" ? "primary" : "secondary"} className="w-full sm:w-auto">
+                Como dar entrada
+              </Button>
             </Link>
           </>
         }
@@ -125,7 +161,26 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
       <div className="flex flex-wrap items-center gap-3">
         <StatusBadge status={data.compare.status} />
         <p className="text-sm text-ink-muted">NCM {data.product.ncm}</p>
+        <Button
+          variant="secondary"
+          disabled={saving}
+          onClick={() => void marcarTratado(!data.product.treated)}
+        >
+          {data.product.treated ? "Desmarcar tratado" : "Marcar como já tratado"}
+        </Button>
       </div>
+      {data.product.treated ? (
+        <p className="text-sm text-ink-muted">
+          {data.product.treatedStale
+            ? "Tratado no lote anterior — a situação fiscal mudou. Confira de novo ou desmarque."
+            : "Já tratado: CST, MVA e destinos foram alinhados com a regra e o status passou a correto."}
+        </p>
+      ) : (
+        <p className="text-sm text-ink-muted">
+          Ao marcar como tratado, o sistema copia os valores corretos da regra fiscal para este
+          produto.
+        </p>
+      )}
       <p className="text-sm">{data.compare.motivo}</p>
 
       {data.compare.needsLink ? (
@@ -161,13 +216,25 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
       {mode === "ficha" ? (
         <section className="grid gap-2">
           <h2 className="text-sm font-medium text-ink">Como está e como deve ficar</h2>
-          <CstMatrix
-            ideal={data.compare.rule?.destinosCst}
-            atual={data.product.destinosCst}
-            extras={fichaExtras(data)}
-            showAtual
-            showDestinos={hasDestinos(data.product.destinosCst) || Boolean(data.compare.rule?.destinosCst)}
-          />
+          <div className="md:hidden">
+            <CstMatrix
+              layout="stacked"
+              ideal={data.compare.rule?.destinosCst}
+              atual={data.product.destinosCst}
+              extras={fichaExtras(data)}
+              showAtual
+              showDestinos={hasDestinos(data.product.destinosCst) || Boolean(data.compare.rule?.destinosCst)}
+            />
+          </div>
+          <div className="hidden md:block">
+            <CstMatrix
+              ideal={data.compare.rule?.destinosCst}
+              atual={data.product.destinosCst}
+              extras={fichaExtras(data)}
+              showAtual
+              showDestinos={hasDestinos(data.product.destinosCst) || Boolean(data.compare.rule?.destinosCst)}
+            />
+          </div>
         </section>
       ) : (
         <section className="grid gap-4 rounded-lg border border-line bg-white p-5">
@@ -189,7 +256,12 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
             <Item label="MVA" value={data.guide?.mva ?? "—"} />
             <Item label="CFOP de entrada" value={data.guide?.cfopEntradaNota ?? "—"} />
           </dl>
-          <CstMatrix ideal={data.compare.rule?.destinosCst} />
+          <div className="md:hidden">
+            <CstMatrix layout="stacked" ideal={data.compare.rule?.destinosCst} />
+          </div>
+          <div className="hidden md:block">
+            <CstMatrix ideal={data.compare.rule?.destinosCst} />
+          </div>
           <div>
             <h2 className="font-medium">Checklist na NF do fornecedor</h2>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">

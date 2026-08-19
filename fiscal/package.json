@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next dev --turbopack",
+    "dev": "node scripts/keep-next.mjs",
+    "dev:sempre": "node scripts/keep-next.mjs 3000",
+    "dev:once": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,7 +17,8 @@
     "db:generate": "prisma generate",
     "postinstall": "prisma generate",
     "extract": "python tools/extract_rules.py",
-    "import:cadastro": "tsx prisma/import-cadastro.ts"
+    "import:cadastro": "tsx prisma/import-cadastro.ts",
+    "db:backfill-audit": "tsx prisma/backfill-audit.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -16,7 +16,7 @@ export const PRODUCT_SHEET_COLUMNS: FiscalColumn<ProductSheetItem>[] = [
     id: "descricao",
     header: "Descrição",
     sticky: 2,
-    className: "min-w-[14rem] max-w-[14rem] truncate",
+    className: "min-w-[10rem] max-w-[14rem] truncate sm:min-w-[14rem]",
     cell: (row) => <span title={row.descricao}>{row.descricao}</span>,
   },
   {
@@ -29,16 +29,27 @@ export const PRODUCT_SHEET_COLUMNS: FiscalColumn<ProductSheetItem>[] = [
   {
     id: "status",
     header: "Status",
-    cell: (row) => <StatusBadge status={row.status} />,
+    cell: (row) => (
+      <span className="flex flex-wrap items-center gap-1">
+        <StatusBadge status={row.status} />
+        {row.treated ? (
+          <span className="text-[11px] uppercase tracking-wide text-ink-muted">
+            {row.treatedStale ? "tratado*" : "tratado"}
+          </span>
+        ) : null}
+      </span>
+    ),
   },
   {
     id: "situacao",
     header: "Situação",
+    show: "md",
     cell: (row) => row.situacaoCodigo || row.situacao || "—",
   },
   {
     id: "cstEntrada",
     header: "CST entrada",
+    show: "md",
     cell: (row) => (
       <CstCell compare atual={row.importado.cstCompra} ideal={row.correto?.cstEntrada} />
     ),
@@ -46,6 +57,7 @@ export const PRODUCT_SHEET_COLUMNS: FiscalColumn<ProductSheetItem>[] = [
   {
     id: "cstSaida",
     header: "CST saída",
+    show: "md",
     cell: (row) => (
       <CstCell compare atual={row.importado.cstUnico} ideal={row.correto?.cstSaida} />
     ),
@@ -53,12 +65,14 @@ export const PRODUCT_SHEET_COLUMNS: FiscalColumn<ProductSheetItem>[] = [
   {
     id: "cfop",
     header: "CFOP",
+    show: "lg",
     className: "tabular",
     cell: (row) => row.correto?.cfopSaida ?? "—",
   },
   {
     id: "mva",
     header: "MVA",
+    show: "lg",
     cell: (row) => (
       <CstCell compare atual={row.importado.ivaMva} ideal={row.correto?.mva} />
     ),
@@ -67,6 +81,7 @@ export const PRODUCT_SHEET_COLUMNS: FiscalColumn<ProductSheetItem>[] = [
     (key): FiscalColumn<ProductSheetItem> => ({
       id: key,
       header: DESTINO_SHORT_LABELS[key],
+      show: "xl",
       cell: (row) => (
         <CstCell
           compare

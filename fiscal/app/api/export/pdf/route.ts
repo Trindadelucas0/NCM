@@ -2,7 +2,7 @@ import { compareCompanyProducts } from "@/src/server/audit";
 import { activeBatchForRequest } from "@/src/server/batch";
 import { buildPdf, buildReportFromCompared } from "@/src/server/export";
 import { jsonError } from "@/src/server/http";
-import { isJunkRow } from "@/src/server/import-cadastro";
+import { parseProductListParams } from "@/src/server/product-query";
 import { HttpError, requireUser } from "@/src/server/tenant";
 
 export async function GET(request: Request) {
@@ -12,18 +12,18 @@ export async function GET(request: Request) {
     if (!batch) {
       throw new HttpError(404, "NOT_FOUND", "Nenhum lote importado.");
     }
-    const onlyDivergent = new URL(request.url).searchParams.get("somente") === "divergentes";
-    const items = (await compareCompanyProducts(user.companyId, batch.id)).filter(
-      (i) => !isJunkRow(i.product.codigo, i.product.descricao),
-    );
-    const filtered = onlyDivergent
-      ? items.filter((i) => i.compare.status === "DIVERGENTE")
-      : items.filter((i) => i.compare.status !== "CORRETO");
+    const url = new URL(request.url);
+    const onlyDivergent = url.searchParams.get("somente") === "divergentes";
+    const tratado = parseProductListParams(url).tratado;
+    const items = await compareCompanyProducts(user.companyId, batch.id, {
+      statuses: onlyDivergent ? ["DIVERGENTE"] : ["DIVERGENTE", "NECESSITA_ANALISE"],
+      tratado,
+    });
     const buffer = await buildPdf(
       buildReportFromCompared({
         companyName: user.companyName,
         batchFileName: batch.fileName,
-        items: filtered,
+        items,
       }),
     );
     return new Response(new Uint8Array(buffer), {

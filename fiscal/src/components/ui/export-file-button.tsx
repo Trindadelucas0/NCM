@@ -40,7 +40,7 @@ export function ExportFileButton({ href, children, variant = "secondary" }: Prop
 
   return (
     <span className="inline-flex flex-col items-stretch gap-1">
-      <Button type="button" variant={variant} disabled={loading} onClick={onClick}>
+      <Button type="button" variant={variant} className="w-full sm:w-auto" disabled={loading} onClick={onClick}>
         {loading ? "Gerando…" : children}
       </Button>
       {error ? (

@@ -40,6 +40,7 @@ model User {
   company  Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
   sessions Session[]
   batches  ImportBatch[]
+  treated  Product[]     @relation("ProductTreatedBy")
 
   @@unique([companyId, email])
   @@index([companyId])
@@ -82,6 +83,7 @@ model FiscalNcmRule {
   company Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   links   ProductRuleLink[]
 
+  @@unique([companyId, ncm, situacaoCodigo])
   @@index([companyId, ncm])
   @@index([companyId, situacaoCodigo])
   @@map("fiscal_ncm_rules")
@@ -120,16 +122,25 @@ model Product {
   cest          String?
   cstCompra     String?  @map("cst_compra")
   cstUnico      String?  @map("cst_unico")
-  destinosCst   Json?    @map("destinos_cst")
-  createdAt     DateTime @default(now()) @map("created_at")
+  destinosCst      Json?    @map("destinos_cst")
+  auditStatus      String?  @map("audit_status")
+  auditMotivo      String?  @map("audit_motivo")
+  treatedAt        DateTime? @map("treated_at")
+  treatedByUserId  String?  @map("treated_by_user_id")
+  treatedNote      String?  @map("treated_note")
+  treatedStale     Boolean  @default(false) @map("treated_stale")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   company     Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   importBatch ImportBatch       @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  treatedBy   User?             @relation("ProductTreatedBy", fields: [treatedByUserId], references: [id], onDelete: SetNull)
   links       ProductRuleLink[]
 
   @@index([companyId, ncm])
   @@index([companyId, codigo])
   @@index([companyId, importBatchId])
+  @@index([companyId, importBatchId, auditStatus])
+  @@index([companyId, importBatchId, treatedAt])
   @@map("products")
 }
 

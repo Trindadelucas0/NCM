@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BatchDiffPanel } from "@/src/components/product/batch-diff-panel";
 import { Button } from "@/src/components/ui/button";
 import { PageHeader } from "@/src/components/ui/page-header";
-import type { BatchOption } from "@/src/components/product/batch-selector";
+import { clearImportListCache, type BatchOption } from "@/src/components/product/batch-selector";
 
 export default function ImportarPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -12,6 +13,7 @@ export default function ImportarPage() {
   const [forbidden, setForbidden] = useState(false);
   const [batches, setBatches] = useState<BatchOption[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [keepTreated, setKeepTreated] = useState(true);
 
   async function loadBatches() {
     const res = await fetch("/api/import");
@@ -38,6 +40,7 @@ export default function ImportarPage() {
     setStatus("loading");
     const body = new FormData();
     body.append("file", file);
+    body.append("manterTratados", keepTreated ? "1" : "0");
     try {
       const res = await fetch("/api/import", { method: "POST", body });
       const json = await res.json();
@@ -51,6 +54,7 @@ export default function ImportarPage() {
         `${json.data.imported} produtos importados neste lote. A base NCM permanece com ${json.data.rulesStillThere} regras. Lotes anteriores foram mantidos.`,
       );
       setFile(null);
+      clearImportListCache();
       await loadBatches();
     } catch {
       setStatus("error");
@@ -71,6 +75,7 @@ export default function ImportarPage() {
         setMessage(json.error?.message ?? "Não foi possível apagar o lote.");
         return;
       }
+      clearImportListCache();
       await loadBatches();
     } finally {
       setDeleting(null);
@@ -92,7 +97,7 @@ export default function ImportarPage() {
         title="Importar produtos"
         description="Cada planilha vira um lote separado. A conferência (como está × como deve ficar) usa só o lote escolhido. A base fiscal da empresa não é substituída."
       />
-      <form onSubmit={onSubmit} className="max-w-xl rounded-lg border border-line bg-white p-6">
+      <form onSubmit={onSubmit} className="w-full max-w-xl rounded-lg border border-line bg-white p-4 sm:p-6">
         <label htmlFor="arquivo" className="text-sm font-medium text-ink">
           Arquivo (XLSX, CSV ou ODS, até 8 MB)
         </label>
@@ -101,12 +106,26 @@ export default function ImportarPage() {
           name="arquivo"
           type="file"
           accept=".xlsx,.csv,.ods"
-          className="mt-2 block w-full text-sm"
+          className="mt-2 block w-full text-base md:text-sm"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
         <p className="mt-3 text-xs text-ink-muted">
           Colunas reconhecidas: codigo, descricao, ncm, CST por destinatário, CST compra, alíquota, IVA/MVA, CEST.
         </p>
+        {batches.length > 0 ? (
+          <label className="mt-4 flex items-start gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={keepTreated}
+              onChange={(event) => setKeepTreated(event.target.checked)}
+            />
+            <span>
+              Trazer “já tratado” do lote anterior (mesmo código). Itens que ficarem corretos não copiam a
+              marca. Se a situação fiscal mudar, o item aparece como tratado desatualizado.
+            </span>
+          </label>
+        ) : null}
         <div className="mt-6">
           <Button type="submit" disabled={status === "loading"}>
             {status === "loading" ? "Importando…" : "Importar planilha"}
@@ -118,6 +137,7 @@ export default function ImportarPage() {
 
       <section className="grid gap-3">
         <h2 className="font-display text-xl text-ink">Histórico de planilhas</h2>
+        {batches[0] ? <BatchDiffPanel lote={batches[0].id} /> : null}
         {batches.length === 0 ? (
           <p className="text-sm text-ink-muted">Ainda não há lote importado nesta empresa.</p>
         ) : (
@@ -140,13 +160,14 @@ export default function ImportarPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <a href={`/consulta?lote=${batch.id}`}>
-                    <Button type="button" variant="secondary">
+                    <Button type="button" variant="secondary" className="w-full sm:w-auto">
                       Ver conferência
                     </Button>
                   </a>
                   <Button
                     type="button"
                     variant="danger"
+                    className="w-full sm:w-auto"
                     disabled={deleting === batch.id}
                     onClick={() => void apagar(batch.id, batch.fileName)}
                   >

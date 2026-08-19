@@ -1,5 +1,6 @@
 import {
   DESTINO_KEYS,
+  DESTINO_LABELS,
   DESTINO_SHORT_LABELS,
   cstCellsDiverge,
   displayCst,
@@ -13,21 +14,74 @@ export type MatrixExtraRow = {
   ideal?: string | null;
 };
 
+type CstMatrixProps = {
+  ideal?: DestinosCst | null;
+  atual?: DestinosCst | null;
+  extras?: MatrixExtraRow[];
+  showAtual?: boolean;
+  showDestinos?: boolean;
+  layout?: "table" | "stacked";
+};
+
+type StackedItem = {
+  key: string;
+  label: string;
+  atual?: string | null;
+  ideal?: string | null;
+};
+
 export function CstMatrix({
   ideal,
   atual,
   extras = [],
   showAtual,
   showDestinos = true,
-}: {
-  ideal?: DestinosCst | null;
-  atual?: DestinosCst | null;
-  extras?: MatrixExtraRow[];
-  showAtual?: boolean;
-  showDestinos?: boolean;
-}) {
+  layout = "table",
+}: CstMatrixProps) {
   const includeAtual = showAtual ?? Boolean(atual);
   const destinos = showDestinos && (Boolean(atual) || Boolean(ideal) || extras.length === 0);
+
+  if (layout === "stacked") {
+    const items: StackedItem[] = [
+      ...(destinos
+        ? DESTINO_KEYS.map((key) => ({
+            key,
+            label: DESTINO_LABELS[key],
+            atual: atual?.[key] ?? null,
+            ideal: ideal?.[key] ?? null,
+          }))
+        : []),
+      ...extras,
+    ];
+
+    return (
+      <dl className="overflow-hidden rounded-lg border border-line">
+        {items.map((item, index) => {
+          const mismatch = includeAtual && cstCellsDiverge(item.atual, item.ideal);
+          return (
+            <div
+              key={item.key}
+              className={`px-3 py-2.5 ${index > 0 ? "border-t border-line" : ""}`}
+            >
+              <dt className="text-xs uppercase tracking-wide text-ink-muted">{item.label}</dt>
+              {includeAtual ? (
+                <dd className="mt-1 grid gap-1 text-sm">
+                  <span className={`tabular ${mismatch ? "bg-status-bad-bg text-status-bad" : ""}`}>
+                    Importado: {displayCst(item.atual)}
+                  </span>
+                  <span className={`tabular ${mismatch ? "bg-status-ok-bg text-status-ok" : ""}`}>
+                    Como deve ficar: {displayCst(item.ideal)}
+                  </span>
+                </dd>
+              ) : (
+                <dd className="mt-1 text-sm tabular">{displayCst(item.ideal)}</dd>
+              )}
+            </div>
+          );
+        })}
+      </dl>
+    );
+  }
 
   return (
     <div className="overflow-auto rounded-lg border border-line">

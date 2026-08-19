@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { HttpError } from "@/src/server/tenant";
 
 export function jsonError(error: unknown) {
@@ -6,6 +7,12 @@ export function jsonError(error: unknown) {
     return NextResponse.json(
       { success: false, error: { code: error.code, message: error.message } },
       { status: error.status },
+    );
+  }
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      { success: false, error: { code: "VALIDATION", message: "Dados inválidos." } },
+      { status: 400 },
     );
   }
   const message = error instanceof Error ? error.message : "Erro interno.";

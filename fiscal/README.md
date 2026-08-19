@@ -29,7 +29,7 @@ npm run dev
 - BAIFER: `admin@baifer.local`
 - Loja: `admin@loja.local`
 
-Senha: `SEED_ADMIN_PASSWORD` no `.env`.
+Senha: `SEED_ADMIN_PASSWORD` no `.env`. O seed **não apaga** planilhas já importadas. Para zerar só o cadastro: `SEED_RESET_CADASTRO=1 npm run db:seed`.
 
 4. Cadastro do cliente (export Santri) importa **um lote por arquivo** na empresa logada. Lotes anteriores ficam no histórico:
 

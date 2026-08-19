@@ -29,22 +29,30 @@ export const RULE_SHEET_COLUMNS: FiscalColumn<RuleSheetItem>[] = [
     id: "segmento",
     header: "Segmento",
     sticky: 2,
-    className: "min-w-[14rem] max-w-[14rem] truncate",
+    className: "min-w-[10rem] max-w-[14rem] truncate sm:min-w-[14rem]",
     cell: (row) => <span title={row.segmento}>{row.segmento}</span>,
+  },
+  {
+    id: "situacao",
+    header: "Situação",
+    cell: (row) => row.situacaoCodigo || row.situacao,
   },
   {
     id: "cstEntrada",
     header: "CST entrada",
+    show: "md",
     cell: (row) => <CstCell atual={row.cstEntrada} />,
   },
   {
     id: "cstSaida",
     header: "CST BAIFER",
+    show: "md",
     cell: (row) => <CstCell atual={row.cstSaida} />,
   },
   {
     id: "cfop",
     header: "CFOP",
+    show: "lg",
     className: "tabular",
     cell: (row) => row.cfopSaida ?? "—",
   },
@@ -52,17 +60,14 @@ export const RULE_SHEET_COLUMNS: FiscalColumn<RuleSheetItem>[] = [
     (key): FiscalColumn<RuleSheetItem> => ({
       id: key,
       header: DESTINO_SHORT_LABELS[key],
+      show: "xl",
       cell: (row) => <CstCell atual={row.destinosCst[key]} />,
     }),
   ),
   {
-    id: "situacao",
-    header: "Situação",
-    cell: (row) => row.situacaoCodigo || row.situacao,
-  },
-  {
     id: "mva",
     header: "MVA",
+    show: "lg",
     cell: (row) => row.mvaTexto ?? "—",
   },
 ];

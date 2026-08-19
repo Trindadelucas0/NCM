@@ -12,7 +12,13 @@ import { loginAllowed, loginFailed, loginSucceeded } from "@/src/server/rate-lim
 const schema = z.object({
   email: z.string().email().max(180),
   password: z.string().min(1).max(200),
-  company: z.enum(["baifer", "loja"]),
+  company: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i)
+    .transform((value) => value.toLowerCase()),
 });
 
 export async function POST(request: NextRequest) {

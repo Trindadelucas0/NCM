@@ -9,7 +9,16 @@ export type ProductFilterValues = {
   q: string;
   ncm: string;
   status: "" | "DIVERGENTE" | "NECESSITA_ANALISE" | "CORRETO";
+  tratado: "" | "nao" | "sim";
 };
+
+export function parseStatusFilter(
+  raw: string | null,
+  fallback: ProductFilterValues["status"] = "",
+): ProductFilterValues["status"] {
+  if (raw === "DIVERGENTE" || raw === "NECESSITA_ANALISE" || raw === "CORRETO") return raw;
+  return fallback;
+}
 
 export type ProductFilterSummary = {
   total: number;
@@ -25,7 +34,7 @@ const STATUS_CHIPS: {
 }[] = [
   { id: "", label: "Todos", count: "total" },
   { id: "DIVERGENTE", label: "Divergente", count: "divergentes" },
-  { id: "NECESSITA_ANALISE", label: "Necessita análise", count: "analise" },
+  { id: "NECESSITA_ANALISE", label: "Análise", count: "analise" },
   { id: "CORRETO", label: "Correto", count: "corretos" },
 ];
 
@@ -34,73 +43,102 @@ export function ProductFilters({
   summary,
   onChange,
   resetStatus = "",
+  hideTreatedDefault = false,
   lead,
 }: {
   values: ProductFilterValues;
   summary?: ProductFilterSummary;
   onChange: (next: ProductFilterValues) => void;
   resetStatus?: ProductFilterValues["status"];
+  hideTreatedDefault?: boolean;
   lead?: ReactNode;
 }) {
-  const dirty = Boolean(values.q || values.ncm || values.status !== resetStatus);
+  const dirty = Boolean(
+    values.q ||
+      values.ncm ||
+      values.status !== resetStatus ||
+      (hideTreatedDefault ? values.tratado !== "nao" : Boolean(values.tratado)),
+  );
 
   return (
     <SheetToolbar>
       {lead}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="min-w-0 flex-1 md:max-w-xs">
         <Field
+          compact
           id="filtro-busca"
-          label="Buscar código ou descrição"
+          label="Código ou descrição"
           value={values.q}
           onChange={(e) => onChange({ ...values, q: e.target.value })}
-          placeholder="Ex.: 204.834 ou TINTA SUVINIL"
+          placeholder="Código ou descrição"
           autoComplete="off"
         />
+      </div>
+      <div className="w-full min-w-0 md:w-36">
         <Field
+          compact
           id="filtro-ncm"
-          label="Filtrar NCM"
+          label="NCM"
           value={values.ncm}
           onChange={(e) => onChange({ ...values, ncm: e.target.value })}
-          placeholder="Ex.: 32091010"
+          placeholder="NCM"
           inputMode="numeric"
           autoComplete="off"
         />
       </div>
-      <div>
-        <p className="mb-2 text-sm font-medium text-ink">Situação</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por situação">
-          {STATUS_CHIPS.map((chip) => {
-            const active = values.status === chip.id;
-            const count = summary?.[chip.count];
-            return (
-              <button
-                key={chip.id || "todos"}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onChange({ ...values, status: chip.id })}
-                className={`min-h-11 rounded-md border px-3 text-sm font-medium transition ${
-                  active
-                    ? "border-brand bg-brand text-white"
-                    : "border-line bg-paper text-ink hover:bg-white"
-                }`}
-              >
-                {chip.label}
-                {typeof count === "number" ? ` (${count})` : ""}
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex min-w-0 flex-wrap gap-1.5" role="group" aria-label="Filtrar por situação">
+        {STATUS_CHIPS.map((chip) => {
+          const active = values.status === chip.id;
+          const count = summary?.[chip.count];
+          return (
+            <button
+              key={chip.id || "todos"}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange({ ...values, status: chip.id })}
+              className={`min-h-11 rounded-md border px-2.5 text-sm font-medium transition ${
+                active
+                  ? "border-brand bg-brand text-white"
+                  : "border-line bg-white text-ink hover:bg-paper"
+              }`}
+            >
+              {chip.label}
+              {typeof count === "number" ? ` (${count})` : ""}
+            </button>
+          );
+        })}
       </div>
+      {hideTreatedDefault ? (
+        <button
+          type="button"
+          aria-pressed={values.tratado === "nao"}
+          onClick={() =>
+            onChange({ ...values, tratado: values.tratado === "nao" ? "" : "nao" })
+          }
+          className={`min-h-11 rounded-md border px-2.5 text-sm font-medium ${
+            values.tratado === "nao"
+              ? "border-brand bg-brand text-white"
+              : "border-line bg-white text-ink hover:bg-paper"
+          }`}
+        >
+          Ocultar tratados
+        </button>
+      ) : null}
       {dirty ? (
-        <div>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onChange({ q: "", ncm: "", status: resetStatus })}
-          >
-            Limpar filtros
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() =>
+            onChange({
+              q: "",
+              ncm: "",
+              status: resetStatus,
+              tratado: hideTreatedDefault ? "nao" : "",
+            })
+          }
+        >
+          Limpar
+        </Button>
       ) : null}
     </SheetToolbar>
   );

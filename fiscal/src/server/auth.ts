@@ -22,6 +22,10 @@ export function hashSessionToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export async function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, 12);
+}
+
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
   return bcrypt.compare(plain, hash);
 }
@@ -40,7 +44,7 @@ export async function authenticate(
 ): Promise<AuthUser | null> {
   const normalized = email.trim().toLowerCase();
   const slug = companySlug.trim().toLowerCase();
-  if (slug !== "baifer" && slug !== "loja") {
+  if (!slug) {
     await bcrypt.hash(password, 10);
     return null;
   }

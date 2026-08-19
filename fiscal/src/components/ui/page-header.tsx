@@ -17,10 +17,10 @@ export function PageHeader({
             {kicker}
           </p>
         ) : null}
-        <h1 className="mt-1 font-display text-3xl text-ink">{title}</h1>
+        <h1 className="mt-1 font-display text-2xl text-ink sm:text-3xl">{title}</h1>
         {description ? <p className="mt-2 max-w-2xl text-sm text-ink-muted">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? <div className="flex w-full flex-wrap gap-2 sm:w-auto">{actions}</div> : null}
     </div>
   );
 }
