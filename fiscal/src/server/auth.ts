@@ -125,7 +125,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 export function sessionCookieOptions() {
-  const secure = process.env.NODE_ENV === "production";
+  const secure =
+    process.env.COOKIE_SECURE === "1" ||
+    (process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "0");
   return {
     httpOnly: true,
     secure,
