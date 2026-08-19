@@ -1,0 +1,257 @@
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CstMatrix, type MatrixExtraRow } from "@/src/components/matrix/cst-matrix";
+import { DiffTable } from "@/src/components/product/diff-table";
+import { Button } from "@/src/components/ui/button";
+import { PageHeader } from "@/src/components/ui/page-header";
+import { StatusBadge } from "@/src/components/ui/status-badge";
+import { DESTINO_KEYS, type DestinosCst, type FieldDiff, type StatusFiscal } from "@/src/lib/fiscal";
+
+type Payload = {
+  product: {
+    id: string;
+    codigo: string;
+    descricao: string;
+    ncm: string;
+    destinosCst: DestinosCst | null;
+    cstUnico: string | null;
+    cstCompra: string | null;
+    ivaMva: string | null;
+  };
+  compare: {
+    status: StatusFiscal;
+    motivo: string;
+    diffs: FieldDiff[];
+    needsLink: boolean;
+    rule: {
+      id: string;
+      situacaoCodigo: string;
+      cstEntrada: string | null;
+      cstSaida: string | null;
+      cfopSaida: string | null;
+      destinosCst: DestinosCst;
+      mvaTexto: string | null;
+    } | null;
+    candidates: { id: string; situacaoCodigo: string; cstSaida: string | null }[];
+  };
+  guide: {
+    ncm: string;
+    destaqueStInterno: string | null;
+    cfopEntradaNota: string;
+    checklist: string[];
+    alertaDivergencia: string | null;
+    matriz: { destino: string; cst: string }[];
+    cstEntrada: string;
+    cstBaifer: string;
+    cfopSaida: string;
+    mva: string;
+    situacao: string;
+  } | null;
+};
+
+export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
+  const params = useParams<{ id: string }>();
+  const [data, setData] = useState<Payload | null>(null);
+  const [error, setError] = useState("");
+  const [role, setRole] = useState<"admin" | "consulta">("consulta");
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    const res = await fetch(`/api/products/${params.id}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message ?? "Não encontrado");
+    setData(json.data);
+  }
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((json) => setRole(json.data?.role ?? "consulta"));
+    load().catch((err: Error) => setError(err.message));
+  }, [params.id]);
+
+  async function vincular(ruleId: string) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/products/${params.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ruleId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Falha ao vincular");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (error) {
+    return <p className="text-sm text-status-bad">{error}</p>;
+  }
+  if (!data) {
+    return <p className="text-sm text-ink-muted">Carregando ficha…</p>;
+  }
+
+  const title = mode === "entrada" ? "Como dar entrada?" : "Consulta fiscal do produto";
+
+  return (
+    <div className="grid gap-8">
+      <PageHeader
+        kicker={data.product.codigo}
+        title={title}
+        description={data.product.descricao}
+        actions={
+          <>
+            <Link href={`/consulta/${data.product.id}`}>
+              <Button variant={mode === "ficha" ? "primary" : "secondary"}>Ficha</Button>
+            </Link>
+            <Link href={`/como-dar-entrada/${data.product.id}`}>
+              <Button variant={mode === "entrada" ? "primary" : "secondary"}>Como dar entrada</Button>
+            </Link>
+          </>
+        }
+      />
+      <p className="rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-muted">
+        A tributação correta não vem do cadastro importado. Vem da regra fiscal da empresa: um NCM, uma
+        regra, para todos os produtos daquele NCM. Se o NCM no ERP estiver errado, CST, MVA e a entrada saem
+        errados juntos.
+      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <StatusBadge status={data.compare.status} />
+        <p className="text-sm text-ink-muted">NCM {data.product.ncm}</p>
+      </div>
+      <p className="text-sm">{data.compare.motivo}</p>
+
+      {data.compare.needsLink ? (
+        <div className="rounded-lg border border-status-warn bg-status-warn-bg p-4">
+          <p className="font-medium">Este NCM tem duas regras. Escolha a hipótese.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {data.compare.candidates.map((c) => (
+              <Button
+                key={c.id}
+                variant="secondary"
+                disabled={saving || role !== "admin"}
+                onClick={() => vincular(c.id)}
+              >
+                Vincular {c.situacaoCodigo} (CST {c.cstSaida ?? "—"})
+              </Button>
+            ))}
+          </div>
+          {role !== "admin" ? (
+            <p className="mt-2 text-sm">Somente administrador pode vincular a regra.</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {mode === "entrada" && data.compare.diffs.length > 0 ? (
+        <section className="grid gap-2">
+          <h2 className="text-sm font-medium text-ink">
+            O que veio errado no importado e como deve ficar
+          </h2>
+          <DiffTable diffs={data.compare.diffs} />
+        </section>
+      ) : null}
+
+      {mode === "ficha" ? (
+        <section className="grid gap-2">
+          <h2 className="text-sm font-medium text-ink">Como está e como deve ficar</h2>
+          <CstMatrix
+            ideal={data.compare.rule?.destinosCst}
+            atual={data.product.destinosCst}
+            extras={fichaExtras(data)}
+            showAtual
+            showDestinos={hasDestinos(data.product.destinosCst) || Boolean(data.compare.rule?.destinosCst)}
+          />
+        </section>
+      ) : (
+        <section className="grid gap-4 rounded-lg border border-line bg-white p-5">
+          {data.guide?.alertaDivergencia ? (
+            <p className="rounded-md bg-status-bad-bg px-3 py-2 text-sm text-status-bad">
+              {data.guide.alertaDivergencia}
+            </p>
+          ) : null}
+          {data.guide?.destaqueStInterno ? (
+            <p className="rounded-md bg-status-warn-bg px-3 py-2 text-sm">{data.guide.destaqueStInterno}</p>
+          ) : null}
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <Item label="NCM do cadastro (cliente)" value={data.product.ncm || "(vazio)"} />
+            <Item label="NCM da regra da empresa" value={data.guide?.ncm ?? "—"} />
+            <Item label="Situação" value={data.guide?.situacao ?? "—"} />
+            <Item label="CST nota de entrada" value={data.guide?.cstEntrada ?? "—"} />
+            <Item label="CST da empresa (saída)" value={data.guide?.cstBaifer ?? "—"} />
+            <Item label="CFOP de saída" value={data.guide?.cfopSaida ?? "—"} />
+            <Item label="MVA" value={data.guide?.mva ?? "—"} />
+            <Item label="CFOP de entrada" value={data.guide?.cfopEntradaNota ?? "—"} />
+          </dl>
+          <CstMatrix ideal={data.compare.rule?.destinosCst} />
+          <div>
+            <h2 className="font-medium">Checklist na NF do fornecedor</h2>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {data.guide?.checklist.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Item({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd className="mt-1 text-sm">{value}</dd>
+    </div>
+  );
+}
+
+function hasDestinos(destinos?: DestinosCst | null) {
+  return Boolean(destinos && DESTINO_KEYS.some((key) => destinos[key]));
+}
+
+function fichaExtras(data: Payload): MatrixExtraRow[] {
+  const extras: MatrixExtraRow[] = [];
+  const rule = data.compare.rule;
+  const product = data.product;
+  const diffs = data.compare.diffs;
+  const compraDiff = diffs.find((diff) => diff.campo === "CST compra / nota de entrada");
+  const saidaDiff = diffs.find((diff) => diff.campo === "CST BAIFER");
+  const mvaDiff = diffs.find((diff) => diff.campo === "MVA / IVA");
+
+  if (compraDiff || product.cstCompra || rule?.cstEntrada) {
+    extras.push({
+      key: "cstCompra",
+      label: "CST de compra (entrada)",
+      atual: compraDiff?.atual ?? product.cstCompra,
+      ideal: compraDiff?.ideal ?? rule?.cstEntrada,
+    });
+  }
+
+  if (!hasDestinos(product.destinosCst) && (saidaDiff || product.cstUnico || rule?.cstSaida)) {
+    extras.push({
+      key: "cstSaida",
+      label: "CST da empresa (saída)",
+      atual: saidaDiff?.atual ?? product.cstUnico,
+      ideal: saidaDiff?.ideal ?? rule?.cstSaida,
+    });
+  }
+
+  if (mvaDiff || product.ivaMva || rule?.mvaTexto) {
+    extras.push({
+      key: "mva",
+      label: "MVA / IVA",
+      atual: mvaDiff?.atual ?? product.ivaMva,
+      ideal: mvaDiff?.ideal ?? rule?.mvaTexto,
+    });
+  }
+
+  return extras;
+}

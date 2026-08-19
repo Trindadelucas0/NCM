@@ -1,0 +1,29 @@
+# Banco de dados
+
+PostgreSQL. Nome do database: `fiscal-p` (hífen; em SQL use `"fiscal-p"`).  
+ORM: Prisma. Migrations em `prisma/migrations`.
+
+Credenciais **somente** em `.env` (`DATABASE_URL`, `DB_*`). Nenhuma variável `NEXT_PUBLIC_*` aponta para o banco.
+
+## Tabelas
+
+| Tabela | Papel |
+| --- | --- |
+| `companies` | Empresa (BAIFER no seed) |
+| `users` | E-mail, hash bcrypt, papel `admin` ou `consulta` |
+| `sessions` | Token hasheado, expiração |
+| `fiscal_ncm_rules` | Uma linha por NCM + situação; JSON dos 8 CSTs |
+| `products` | Cadastro importado (sempre ligado a um lote) |
+| `product_rule_links` | Vínculo produto → regra (NCM duplicado) |
+| `import_batches` | Histórico de cada planilha (arquivo, data, totais da conferência) |
+
+Toda tabela de negócio tem `company_id`. Consultas usam `findFirst({ id, companyId })`.
+
+## RLS
+
+Policies por `company_id` = `current_setting('app.company_id')` com `FORCE ROW LEVEL SECURITY`.  
+A conexão local usa o papel `postgres` (superuser), que **bypassa RLS**. Em produção deve-se usar um role sem `BYPASSRLS`. O filtro de tenant na aplicação permanece obrigatório.
+
+## Seed
+
+Empresa BAIFER + admin + consulta + regras da aba BAIFER. **Zero produtos.**

@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  consulta
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users    User[]
+  sessions Session[]
+  rules    FiscalNcmRule[]
+  products Product[]
+  links    ProductRuleLink[]
+  batches  ImportBatch[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  companyId    String   @map("company_id")
+  email        String
+  passwordHash String   @map("password_hash")
+  name         String
+  role         UserRole
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  company  Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  sessions Session[]
+  batches  ImportBatch[]
+
+  @@unique([companyId, email])
+  @@index([companyId])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, userId])
+  @@map("sessions")
+}
+
+model FiscalNcmRule {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  ncm             String
+  ncmOriginal     String   @map("ncm_original")
+  segmento        String
+  cstEntrada      String?  @map("cst_entrada")
+  cstSaida        String?  @map("cst_saida")
+  cfopSaida       String?  @map("cfop_saida")
+  destinosCst     Json     @map("destinos_cst")
+  situacao        String
+  situacaoCodigo  String   @map("situacao_codigo")
+  mvaPercentual   Decimal? @map("mva_percentual") @db.Decimal(8, 4)
+  mvaTexto        String?  @map("mva_texto")
+  mvaKind         String   @default("skip") @map("mva_kind")
+  observacao      String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  company Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  links   ProductRuleLink[]
+
+  @@index([companyId, ncm])
+  @@index([companyId, situacaoCodigo])
+  @@map("fiscal_ncm_rules")
+}
+
+model ImportBatch {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  userId      String   @map("user_id")
+  fileName    String   @map("file_name")
+  totalRows   Int      @map("total_rows")
+  corretos    Int      @default(0)
+  divergentes Int      @default(0)
+  analise     Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  products Product[]
+
+  @@index([companyId, createdAt])
+  @@map("import_batches")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  companyId     String   @map("company_id")
+  importBatchId String   @map("import_batch_id")
+  codigo        String
+  descricao     String
+  ncm           String
+  ncmOriginal   String   @map("ncm_original")
+  aliquotaIcms  String?  @map("aliquota_icms")
+  ivaMva        String?  @map("iva_mva")
+  ivaMvaNumero  Decimal? @map("iva_mva_numero") @db.Decimal(8, 4)
+  cest          String?
+  cstCompra     String?  @map("cst_compra")
+  cstUnico      String?  @map("cst_unico")
+  destinosCst   Json?    @map("destinos_cst")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  importBatch ImportBatch       @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  links       ProductRuleLink[]
+
+  @@index([companyId, ncm])
+  @@index([companyId, codigo])
+  @@index([companyId, importBatchId])
+  @@map("products")
+}
+
+model ProductRuleLink {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  productId String   @map("product_id")
+  ruleId    String   @map("rule_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rule    FiscalNcmRule  @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, productId])
+  @@index([companyId, ruleId])
+  @@map("product_rule_links")
+}
