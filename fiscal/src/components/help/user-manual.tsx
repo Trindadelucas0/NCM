@@ -267,7 +267,8 @@ export function UserManual() {
             importado ao lado da regra, agrupado por NCM.
           </p>
           <p>
-            Os filtros da tela (planilha, tratados ocultos etc.) entram na exportação. Marcar
+            Antes de gerar, escolha o que entra no arquivo: todos, só divergentes, só análise ou só
+            corretos. A planilha ativa e “ocultar tratados” também entram na exportação. Marcar
             tratado aqui não altera o sistema do cliente: o Excel/PDF é o recado para eles
             ajustarem.
           </p>

@@ -1,7 +1,7 @@
 "use client";
 
+import { ExportActions } from "@/src/components/product/export-actions";
 import { ProductCatalog } from "@/src/components/product/product-catalog";
-import { ExportFileButton } from "@/src/components/ui/export-file-button";
 
 export default function DivergenciasPage() {
   return (
@@ -13,20 +13,9 @@ export default function DivergenciasPage() {
       hideTreatedDefault
       showNcmSummary
       rowMode="expand"
-      actions={(batchId, _batches, filters) => {
-        const lote = batchId ? `&lote=${encodeURIComponent(batchId)}` : "";
-        const treated = filters.tratado ? `&tratado=${filters.tratado}` : "";
-        return (
-          <>
-            <ExportFileButton href={`/api/export/excel?somente=divergentes${lote}${treated}`}>
-              Exportar Excel
-            </ExportFileButton>
-            <ExportFileButton href={`/api/export/pdf?somente=divergentes${lote}${treated}`}>
-              Exportar PDF
-            </ExportFileButton>
-          </>
-        );
-      }}
+      actions={(batchId, _batches, filters) => (
+        <ExportActions batchId={batchId} tratado={filters.tratado} />
+      )}
     />
   );
 }

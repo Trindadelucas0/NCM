@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   auditCounterDeltas,
   dashboardTotalsFromBatch,
+  parseExportStatuses,
   parseProductListParams,
 } from "./product-query";
 
@@ -32,6 +33,51 @@ describe("consulta paginada de produtos", () => {
       new URL("http://local/api/products?tratado=nao&status=DIVERGENTE"),
     );
     expect(params.tratado).toBe("nao");
+  });
+});
+
+describe("filtro de exportação", () => {
+  it("usa status quando válido", () => {
+    expect(parseExportStatuses(new URL("http://local/api/export/excel?status=CORRETO"))).toEqual({
+      statuses: ["CORRETO"],
+      slug: "corretos",
+    });
+    expect(
+      parseExportStatuses(new URL("http://local/api/export/pdf?status=NECESSITA_ANALISE")),
+    ).toEqual({
+      statuses: ["NECESSITA_ANALISE"],
+      slug: "analise",
+    });
+  });
+
+  it("mapeia somente e ignora valor inválido", () => {
+    expect(parseExportStatuses(new URL("http://local/api/export/excel?somente=divergentes"))).toEqual({
+      statuses: ["DIVERGENTE"],
+      slug: "divergentes",
+    });
+    expect(parseExportStatuses(new URL("http://local/api/export/excel?somente=todos"))).toEqual({
+      statuses: undefined,
+      slug: "cadastro",
+    });
+    expect(parseExportStatuses(new URL("http://local/api/export/excel?somente=hacker"))).toEqual({
+      statuses: undefined,
+      slug: "cadastro",
+    });
+    expect(parseExportStatuses(new URL("http://local/api/export/excel"))).toEqual({
+      statuses: undefined,
+      slug: "cadastro",
+    });
+  });
+
+  it("status válido prevalece sobre somente", () => {
+    expect(
+      parseExportStatuses(
+        new URL("http://local/api/export/excel?status=CORRETO&somente=divergentes"),
+      ),
+    ).toEqual({
+      statuses: ["CORRETO"],
+      slug: "corretos",
+    });
   });
 });
 

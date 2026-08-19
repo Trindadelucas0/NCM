@@ -23,7 +23,7 @@ Respostas: `{ success, data }` ou `{ success: false, error: { code, message } }`
 | GET | `/api/import/diff` | sessão | diff vs lote anterior (`lote`, `tipo`, `page`) |
 | POST | `/api/import/select` | sessão | escolhe o lote ativo (cookie HttpOnly) |
 | DELETE | `/api/import/:id` | admin | apaga um lote; outro tenant → 404; regras NCM intactas |
-| GET | `/api/export/excel` | sessão | Excel; `somente=divergentes`; `tratado=nao` oculta já tratados |
+| GET | `/api/export/excel` | sessão | Excel; `status=DIVERGENTE\|CORRETO\|NECESSITA_ANALISE` (vazio = todos); `somente=divergentes\|corretos\|analise\|todos` (legado); `tratado=nao` oculta já tratados |
 | GET | `/api/export/pdf` | sessão | PDF A4 paisagem; mesmos filtros; texto escapado |
 
 Login inválido: `401` sem distinguir se o e-mail existe.  

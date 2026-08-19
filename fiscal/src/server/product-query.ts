@@ -37,6 +37,39 @@ export function parseProductListParams(url: URL): ProductListParams {
   return { q, ncm, status, tratado, page, pageSize };
 }
 
+const SOMENTE_TO_STATUS: Record<string, StatusFiscal> = {
+  divergentes: "DIVERGENTE",
+  corretos: "CORRETO",
+  analise: "NECESSITA_ANALISE",
+};
+
+const STATUS_TO_EXPORT_SLUG: Record<StatusFiscal, string> = {
+  DIVERGENTE: "divergentes",
+  CORRETO: "corretos",
+  NECESSITA_ANALISE: "analise",
+};
+
+export type ExportStatusFilter = {
+  statuses: StatusFiscal[] | undefined;
+  slug: string;
+};
+
+export function parseExportStatuses(url: URL): ExportStatusFilter {
+  const { status } = parseProductListParams(url);
+  if (status) {
+    return { statuses: [status], slug: STATUS_TO_EXPORT_SLUG[status] };
+  }
+  const somente = (url.searchParams.get("somente") ?? "").trim().toLowerCase();
+  if (somente === "todos") {
+    return { statuses: undefined, slug: "cadastro" };
+  }
+  const mapped = SOMENTE_TO_STATUS[somente];
+  if (mapped) {
+    return { statuses: [mapped], slug: STATUS_TO_EXPORT_SLUG[mapped] };
+  }
+  return { statuses: undefined, slug: "cadastro" };
+}
+
 export function treatedWhere(
   tratado: TreatedFilter,
 ): { treatedAt: null } | { treatedAt: { not: null } } | Record<string, never> {
