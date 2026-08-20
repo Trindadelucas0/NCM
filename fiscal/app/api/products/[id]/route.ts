@@ -3,7 +3,7 @@ import { compareProduct } from "@/src/server/compare";
 import { productFromDb, ruleFromDb, syncProductAudit } from "@/src/server/audit";
 import { buildEntradaGuide } from "@/src/server/entrada";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, ownedWhere, requireAdmin, requireCompanySession } from "@/src/server/tenant";
+import { HttpError, ownedWhere, requireCompanyAdmin, requireCompanySession } from "@/src/server/tenant";
 import { withTenant } from "@/src/server/db";
 
 export async function GET(
@@ -58,7 +58,7 @@ export async function POST(
 ) {
   try {
     const user = await requireCompanySession();
-    requireAdmin(user);
+    requireCompanyAdmin(user);
     const { id } = await context.params;
     const body = linkSchema.parse(await request.json());
     await withTenant(user.companyId, async (db) => {

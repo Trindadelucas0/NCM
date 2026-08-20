@@ -1,7 +1,7 @@
 import { BATCH_COOKIE, batchCookieOptions, listImportBatches, requireOwnedBatch } from "@/src/server/batch";
 import { withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { requireAdmin, requireCompanySession } from "@/src/server/tenant";
+import { requireCompanyAdmin, requireCompanySession } from "@/src/server/tenant";
 
 export async function DELETE(
   _request: Request,
@@ -9,7 +9,7 @@ export async function DELETE(
 ) {
   try {
     const user = await requireCompanySession();
-    requireAdmin(user);
+    requireCompanyAdmin(user);
     const { id } = await context.params;
     await requireOwnedBatch(user.companyId, id);
     const ruleCountBefore = await withTenant(user.companyId, (db) =>

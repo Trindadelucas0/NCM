@@ -1,40 +1,38 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { hashPassword, type AuthUser } from "@/src/server/auth";
+import { hashPassword } from "@/src/server/auth";
 import { prisma, withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, requireAdmin, requireSuperAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, requireSuperAdmin, requireUser } from "@/src/server/tenant";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().email().max(180),
   password: z.string().min(8).max(200),
   role: z.enum(["admin", "consulta"]),
-  companyId: z.string().trim().min(1).max(40).optional(),
+  companyId: z.string().trim().min(1).max(60),
 });
 
-async function targetCompanyId(actor: AuthUser, requested?: string) {
-  if (actor.role === "superadmin") {
-    requireSuperAdmin(actor);
-    if (!requested) {
-      throw new HttpError(400, "VALIDATION", "Informe a empresa do usuário.");
-    }
-    const company = await prisma.company.findFirst({ where: { id: requested }, select: { id: true } });
-    if (!company) {
-      throw new HttpError(404, "NOT_FOUND", "Empresa não encontrada.");
-    }
-    return company.id;
+async function existingCompanyId(requested: string | undefined) {
+  if (!requested) {
+    throw new HttpError(400, "VALIDATION", "Informe a empresa do usuário.");
   }
-  requireAdmin(actor);
-  return actor.companyId as string;
+  const company = await prisma.company.findFirst({
+    where: { id: requested },
+    select: { id: true },
+  });
+  if (!company) {
+    throw new HttpError(404, "NOT_FOUND", "Empresa não encontrada.");
+  }
+  return company.id;
 }
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const actor = await requireUser();
+    requireSuperAdmin(actor);
     const url = new URL(request.url);
-    const requested = url.searchParams.get("companyId") ?? undefined;
-    const companyId = await targetCompanyId(user, requested);
+    const companyId = await existingCompanyId(url.searchParams.get("companyId") ?? undefined);
     const users = await withTenant(companyId, (db) =>
       db.user.findMany({
         where: { companyId },
@@ -51,8 +49,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const actor = await requireUser();
+    requireSuperAdmin(actor);
     const body = createSchema.parse(await request.json());
-    const companyId = await targetCompanyId(actor, body.companyId);
+    const companyId = await existingCompanyId(body.companyId);
     const email = body.email.trim().toLowerCase();
     const passwordHash = await hashPassword(body.password);
     const duplicate = await prisma.user.findFirst({

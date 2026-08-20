@@ -76,7 +76,7 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
     setData(null);
     fetch("/api/auth/me", { signal: controller.signal })
       .then((r) => r.json())
-      .then((json) => setRole(json.data?.role === "admin" ? "admin" : "consulta"))
+      .then((json) => setRole(json.data?.canWrite ? "admin" : "consulta"))
       .catch((err: Error) => {
         if (err.name === "AbortError") return;
       });

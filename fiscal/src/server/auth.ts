@@ -9,32 +9,41 @@ import { prisma, withTenant } from "./db";
 export { SESSION_COOKIE };
 const SESSION_HOURS = 8;
 
+export type AppRole = "admin" | "consulta" | "superadmin";
+
 export type AuthUser = {
   id: string;
+  /** Empresa do usuário. Null só no administrador do escritório. */
   companyId: string | null;
+  /** Empresa que o escritório abriu nesta sessão. Null fora desse caso. */
+  activeCompanyId: string | null;
   email: string;
   name: string;
-  role: "admin" | "consulta" | "superadmin";
+  role: AppRole;
   companyName: string | null;
+  activeCompanyName: string | null;
 };
 
-export type CompanyAuthUser = AuthUser & { companyId: string; companyName: string };
-
-function toAuthUser(user: {
-  id: string;
-  companyId: string | null;
-  email: string;
-  name: string;
-  role: "admin" | "consulta" | "superadmin";
-  company: { name: string } | null;
-}): AuthUser {
+function toAuthUser(
+  user: {
+    id: string;
+    companyId: string | null;
+    email: string;
+    name: string;
+    role: AppRole;
+    company: { name: string } | null;
+  },
+  active?: { id: string; name: string } | null,
+): AuthUser {
   return {
     id: user.id,
     companyId: user.companyId,
+    activeCompanyId: active?.id ?? null,
     email: user.email,
     name: user.name,
     role: user.role,
     companyName: user.company?.name ?? null,
+    activeCompanyName: active?.name ?? null,
   };
 }
 
@@ -107,10 +116,24 @@ export async function getUserFromToken(token: string | undefined): Promise<AuthU
   const tokenHash = hashSessionToken(token);
   const session = await prisma.session.findFirst({
     where: { tokenHash, expiresAt: { gt: new Date() } },
-    include: { user: { include: { company: true } } },
+    include: { user: { include: { company: true } }, activeCompany: true },
   });
   if (!session) return null;
-  return toAuthUser(session.user);
+  // Só o escritório navega por empresa escolhida; usuário de empresa fica no tenant dele.
+  const active =
+    session.user.role === "superadmin" && session.activeCompany
+      ? { id: session.activeCompany.id, name: session.activeCompany.name }
+      : null;
+  return toAuthUser(session.user, active);
+}
+
+export async function setActiveCompany(
+  token: string | undefined,
+  companyId: string | null,
+): Promise<void> {
+  if (!token) return;
+  const tokenHash = hashSessionToken(token);
+  await prisma.session.updateMany({ where: { tokenHash }, data: { activeCompanyId: companyId } });
 }
 
 export async function readSessionCookie(): Promise<string | undefined> {
@@ -134,12 +157,4 @@ export function sessionCookieOptions() {
     path: "/",
     maxAge: SESSION_HOURS * 60 * 60,
   };
-}
-
-export function requireRole(user: AuthUser, role: "admin"): void {
-  if (user.role !== role || !user.companyId) {
-    const error = new Error("FORBIDDEN") as Error & { status: number };
-    error.status = 403;
-    throw error;
-  }
 }

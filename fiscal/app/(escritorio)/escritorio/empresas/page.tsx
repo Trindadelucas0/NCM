@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Field } from "@/src/components/ui/field";
@@ -9,12 +10,14 @@ import { PageHeader } from "@/src/components/ui/page-header";
 type CompanyRow = { id: string; name: string; slug: string; createdAt: string };
 
 export default function EscritorioEmpresasPage() {
+  const router = useRouter();
   const [forbidden, setForbidden] = useState(false);
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
+  const [entering, setEntering] = useState("");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -44,6 +47,25 @@ export default function EscritorioEmpresasPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  async function enterCompany(company: CompanyRow) {
+    setEntering(company.id);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/select-company", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId: company.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Não foi possível abrir a empresa.");
+      router.push(typeof json.data.redirectTo === "string" ? json.data.redirectTo : "/dashboard");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível abrir a empresa.");
+      setEntering("");
+    }
+  }
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -85,7 +107,7 @@ export default function EscritorioEmpresasPage() {
       <PageHeader
         kicker="Escritório"
         title="Empresas"
-        description="Cadastre a empresa e o primeiro administrador. A BAIFER e as demais ficam isoladas: cada login abre só o painel daquela empresa."
+        description="Cadastre a empresa e o primeiro administrador. Cada empresa fica isolada: “Entrar” abre a conferência dela sem misturar dados."
       />
       <form
         onSubmit={onSubmit}
@@ -140,11 +162,22 @@ export default function EscritorioEmpresasPage() {
         ) : (
           <ul className="mt-3 divide-y divide-line rounded-lg border border-line bg-white">
             {companies.map((item) => (
-              <li key={item.id} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <li
+                key={item.id}
+                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div>
                   <p className="font-medium text-ink">{item.name}</p>
                   <p className="text-sm text-ink-muted">{item.slug}</p>
                 </div>
+                <Button
+                  variant="secondary"
+                  className="sm:w-auto"
+                  disabled={entering !== ""}
+                  onClick={() => void enterCompany(item)}
+                >
+                  {entering === item.id ? "Abrindo…" : "Entrar"}
+                </Button>
               </li>
             ))}
           </ul>

@@ -13,7 +13,6 @@ import {
   IconDivergencias,
   IconImportar,
   IconPanorama,
-  IconUsuarios,
 } from "./nav-icons";
 
 type NavItem = {
@@ -42,11 +41,6 @@ const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
       { href: "/importar", label: "Importar produtos", admin: true, icon: IconImportar },
     ],
   },
-  {
-    id: "empresa",
-    label: "Empresa",
-    items: [{ href: "/usuarios", label: "Usuários", admin: true, icon: IconUsuarios }],
-  },
 ];
 
 type Me = {
@@ -54,6 +48,8 @@ type Me = {
   email: string;
   role: "admin" | "consulta" | "superadmin";
   companyName: string | null;
+  fromOffice: boolean;
+  canWrite: boolean;
 };
 
 function isActivePath(pathname: string, href: string) {
@@ -67,6 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState("");
   const [lote, setLote] = useState("");
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     const sync = () => setLote(readActiveLote() ?? "");
@@ -116,9 +113,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
+  async function backToOffice() {
+    setLeaving(true);
+    const res = await fetch("/api/auth/clear-company", { method: "POST" });
+    if (!res.ok) {
+      setLeaving(false);
+      setError("Não foi possível voltar ao escritório.");
+      return;
+    }
+    router.push("/escritorio/empresas");
+    router.refresh();
+  }
+
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => !item.admin || me?.role === "admin"),
+    items: group.items.filter((item) => !item.admin || me?.canWrite),
   })).filter((group) => group.items.length > 0);
 
   return (
@@ -166,6 +175,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {me?.fromOffice ? (
+        <div className="border-b border-line-strong bg-brand-soft">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+            <p className="text-sm text-ink">
+              Você está em <span className="font-medium">{me.companyName}</span> pelo escritório.
+            </p>
+            <Button
+              variant="secondary"
+              className="sm:w-auto"
+              disabled={leaving}
+              onClick={backToOffice}
+            >
+              {leaving ? "Voltando…" : "Voltar ao escritório"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {open ? (
         <button

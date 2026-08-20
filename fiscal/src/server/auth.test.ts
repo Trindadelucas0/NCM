@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { postLoginPath } from "@/src/lib/auth-home";
+import { homePath, postLoginPath } from "@/src/lib/auth-home";
+import { canWriteCompany, resolveCompanyScope } from "./company-scope";
 import { loginAllowed, loginFailed, loginSucceeded } from "./rate-limit";
-import { HttpError, ownedWhere, requireAdmin, requireCompanyUser, requireSuperAdmin } from "./tenant";
+import { HttpError, ownedWhere, requireSuperAdmin } from "./tenant";
 import { escapeHtml } from "@/src/lib/html";
 
 describe("senha inválida", () => {
@@ -28,33 +29,67 @@ describe("papéis", () => {
   const office = {
     id: "office",
     companyId: null,
+    activeCompanyId: null,
     email: "escritorio@local",
     name: "Escritório",
     role: "superadmin" as const,
     companyName: null,
+    activeCompanyName: null,
+  };
+  const officeInBaifer = {
+    ...office,
+    activeCompanyId: "cm_baifer_seed_company",
+    activeCompanyName: "BAIFER",
   };
   const baiferAdmin = {
     id: "baifer-admin",
     companyId: "cm_baifer_seed_company",
+    activeCompanyId: null,
     email: "admin@baifer.local",
     name: "Administrador",
     role: "admin" as const,
     companyName: "BAIFER",
+    activeCompanyName: null,
   };
+  const baiferConsulta = { ...baiferAdmin, id: "baifer-consulta", role: "consulta" as const };
 
-  it("superadmin cai no painel do escritório", () => {
+  it("superadmin cai no painel do escritório; com empresa aberta cai na conferência", () => {
     expect(postLoginPath("superadmin")).toBe("/escritorio/empresas");
     expect(postLoginPath("admin")).toBe("/dashboard");
     expect(postLoginPath("consulta")).toBe("/dashboard");
+    expect(homePath("superadmin", false)).toBe("/escritorio/empresas");
+    expect(homePath("superadmin", true)).toBe("/dashboard");
   });
 
-  it("admin da BAIFER não cadastra empresas; superadmin não acessa API fiscal", () => {
+  it("admin da empresa não cadastra empresas nem usuários", () => {
     expect(() => requireSuperAdmin(baiferAdmin)).toThrow(HttpError);
-    expect(() => requireAdmin(office)).toThrow(HttpError);
-    expect(() => requireCompanyUser(office)).toThrow(HttpError);
+    expect(() => requireSuperAdmin(baiferConsulta)).toThrow(HttpError);
     expect(() => requireSuperAdmin(office)).not.toThrow();
-    expect(() => requireAdmin(baiferAdmin)).not.toThrow();
-    expect(() => requireCompanyUser(baiferAdmin)).not.toThrow();
+  });
+
+  it("escritório sem empresa aberta não tem tenant", () => {
+    expect(resolveCompanyScope(office)).toBeNull();
+  });
+
+  it("escritório só age na empresa que abriu", () => {
+    const scope = resolveCompanyScope(officeInBaifer);
+    expect(scope?.companyId).toBe("cm_baifer_seed_company");
+    expect(scope?.fromOffice).toBe(true);
+    expect(canWriteCompany("superadmin", scope!)).toBe(true);
+  });
+
+  it("usuário de empresa fica no tenant dele; consulta não escreve", () => {
+    const adminScope = resolveCompanyScope(baiferAdmin);
+    const consultaScope = resolveCompanyScope(baiferConsulta);
+    expect(adminScope?.companyId).toBe("cm_baifer_seed_company");
+    expect(adminScope?.fromOffice).toBe(false);
+    expect(canWriteCompany("admin", adminScope!)).toBe(true);
+    expect(canWriteCompany("consulta", consultaScope!)).toBe(false);
+  });
+
+  it("activeCompanyId de usuário de empresa não muda o tenant", () => {
+    const forged = { ...baiferAdmin, activeCompanyId: "cm_loja_seed_company", activeCompanyName: "Loja" };
+    expect(resolveCompanyScope(forged)?.companyId).toBe("cm_baifer_seed_company");
   });
 });
 

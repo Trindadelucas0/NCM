@@ -27,8 +27,8 @@ O Auditor Fiscal BAIFER é um sistema interno do escritório. Ele **não substit
 
 A tela inicial é só login. Cada e-mail abre o painel daquela conta:
 
-- **Administrador do escritório:** vê as empresas, cadastra empresa e usuários. Não entra na conferência fiscal.
-- **Administrador da empresa** (BAIFER, Loja, etc.): importa cadastro e vincula regra quando o NCM tem duas hipóteses. Cadastra usuários só da própria empresa.
+- **Administrador do escritório:** vê as empresas, cadastra empresa e usuários de qualquer empresa. Clicando em “Entrar” abre a conferência daquela empresa, com um aviso no topo e o botão “Voltar ao escritório”.
+- **Administrador da empresa** (BAIFER, Loja, etc.): importa cadastro e vincula regra quando o NCM tem duas hipóteses. Não cadastra empresa nem usuário — isso é do escritório.
 - **Consulta:** lê, busca, exporta Excel/PDF e marca item/NCM como já tratado.
 
 ## Como os dados são protegidos

@@ -7,13 +7,13 @@ import { useActiveBatch } from "@/src/components/product/use-active-batch";
 import { EmptyState } from "@/src/components/ui/empty-state";
 import { PageHeader } from "@/src/components/ui/page-header";
 
-export function KpiDashboard() {
+export function KpiDashboard({ companyName }: { companyName: string }) {
   const { batchId, onBatchChange, loteFromUrl, active, batchBooted } = useActiveBatch();
 
   return (
     <div className="grid gap-6">
       <PageHeader
-        kicker="BAIFER"
+        kicker={companyName}
         title="Panorama do cadastro"
         description="Números da planilha ativa. A listagem fica em Consultar e Divergências."
       />

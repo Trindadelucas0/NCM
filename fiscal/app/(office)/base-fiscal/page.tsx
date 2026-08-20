@@ -65,12 +65,13 @@ export default function BaseFiscalPage() {
   const [form, setForm] = useState<RuleFormState>(emptyRuleForm());
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((json) => setIsAdmin(json.data?.role === "admin"))
+      .then((json) => setIsAdmin(Boolean(json.data?.canWrite)))
       .catch(() => setIsAdmin(false));
   }, []);
 
@@ -175,6 +176,34 @@ export default function BaseFiscalPage() {
     }
   }
 
+  async function clearFiscalBase() {
+    if (
+      !window.confirm(
+        `Apagar todas as regras da base fiscal desta empresa${rules.length > 0 && !dirty ? ` (${rules.length})` : ""}? Os lotes de produtos continuam; a conferência passa a marcar falta de regra até importar de novo.`,
+      )
+    ) {
+      return;
+    }
+    setClearing(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/rules", { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Não foi possível excluir a base fiscal.");
+      setSelected(null);
+      setMode("idle");
+      setSuccess(
+        `${json.data.deleted} regra${json.data.deleted === 1 ? "" : "s"} excluída${json.data.deleted === 1 ? "" : "s"}. Lotes de produtos mantidos.`,
+      );
+      setReload((n) => n + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir a base fiscal.");
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <div className="grid gap-6">
       <PageHeader
@@ -205,7 +234,7 @@ export default function BaseFiscalPage() {
             name="arquivo-regras"
             type="file"
             accept=".xlsx,.csv,.ods"
-            disabled={importing}
+            disabled={importing || clearing}
             className="mt-2 block w-full text-base md:text-sm"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -216,6 +245,21 @@ export default function BaseFiscalPage() {
           <p className="mt-2 text-xs text-ink-muted">
             Colunas: NCM, segmento, CST entrada, CST saída, CFOP, 8 destinatários, situação e MVA.
           </p>
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-sm text-ink-muted">
+              Excluir a importação remove todas as regras desta empresa. Os lotes de produtos em
+              Importar não são apagados.
+            </p>
+            <Button
+              type="button"
+              variant="danger"
+              className="mt-3"
+              disabled={importing || clearing || loading || (rules.length === 0 && !dirty)}
+              onClick={() => void clearFiscalBase()}
+            >
+              {clearing ? "Excluindo…" : "Excluir base fiscal"}
+            </Button>
+          </div>
         </form>
       ) : null}
       {mode !== "idle" && isAdmin ? (

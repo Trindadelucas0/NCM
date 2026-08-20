@@ -1,14 +1,16 @@
 # API
 
 Autenticação: cookie `fiscal_session` (HttpOnly, SameSite=Lax, Secure em produção).  
-Todas as rotas de negócio exigem sessão válida. Rotas fiscais exigem login da empresa (não o do escritório). Mutações de importação/vínculo exigem papel `admin` da empresa. Marcar “já tratado” vale para admin e consulta.  
+Todas as rotas de negócio exigem sessão válida. Rotas fiscais exigem uma empresa resolvida no servidor: o usuário da empresa usa o `companyId` dele; o escritório usa a empresa que abriu (`POST /api/auth/select-company`) e sem isso recebe `403 COMPANY_REQUIRED`. Mutações de importação/vínculo exigem `admin` da empresa ou o escritório dentro dela. Marcar “já tratado” vale para admin e consulta.  
 Respostas: `{ success, data }` ou `{ success: false, error: { code, message } }`.
 
 | Método | Rota | Auth | Função |
 | --- | --- | --- | --- |
 | POST | `/api/auth/login` | pública + rate limit | autentica (e-mail e senha); devolve `redirectTo` |
 | POST | `/api/auth/logout` | sessão | encerra cookie |
-| GET | `/api/auth/me` | sessão | usuário e empresa |
+| GET | `/api/auth/me` | sessão | usuário, empresa efetiva, `fromOffice` e `canWrite` |
+| POST | `/api/auth/select-company` | superadmin | abre a empresa (`companyId`) na sessão do escritório |
+| POST | `/api/auth/clear-company` | superadmin | fecha a empresa e volta ao painel do escritório |
 | GET | `/api/dashboard` | sessão | totais do lote ativo (`lote`) |
 | GET | `/api/rules` | sessão | lista NCM (`q`, `situacao`) |
 | GET | `/api/rules/:id` | sessão | regra; outro tenant → 404 |
@@ -27,8 +29,8 @@ Respostas: `{ success, data }` ou `{ success: false, error: { code, message } }`
 | GET | `/api/export/pdf` | sessão da empresa | PDF A4 paisagem; mesmos filtros; texto escapado |
 | GET | `/api/companies` | superadmin | lista empresas |
 | POST | `/api/companies` | superadmin | cria empresa e o primeiro admin |
-| GET | `/api/users` | admin da empresa ou superadmin | lista usuários (`companyId` obrigatório para o escritório) |
-| POST | `/api/users` | admin da empresa ou superadmin | cria usuário (`companyId` no body só para o escritório; papel só `admin` ou `consulta`) |
+| GET | `/api/users` | superadmin | lista usuários da empresa (`companyId` obrigatório) |
+| POST | `/api/users` | superadmin | cria usuário (`companyId` obrigatório; papel só `admin` ou `consulta`) |
 
 Login inválido: `401` sem distinguir se o e-mail existe.  
 Sem permissão: `403`.  

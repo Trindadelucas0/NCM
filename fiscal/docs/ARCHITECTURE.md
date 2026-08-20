@@ -41,3 +41,7 @@ O MVP é web. As regras estão na API, então um futuro cliente Capacitor, Flutt
 **Decisão:** login só com e-mail e senha; admin do escritório separado da BAIFER.  
 **Motivo:** a BAIFER é uma empresa auditada, não o dono do sistema.  
 **Alternativas:** seletor de empresa no login (rejeitado: expunha a lista e misturava papéis).
+
+**Decisão:** o escritório entra na empresa gravando `active_company_id` na sessão, e o tenant sai de `resolveCompanyScope` no servidor.  
+**Motivo:** o escritório precisa conferir cada empresa sem usar o login dela, e sem que o cliente escolha o tenant a cada requisição.  
+**Alternativas:** `companyId` por header/querystring em cada chamada (rejeitado: o cliente passaria a decidir o tenant) e um login por empresa para o escritório (rejeitado: volta a espalhar senha).

@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.3.0 — 20/08/2026
+
+Adicionado:
+
+- O administrador do escritório abre a conferência de qualquer empresa pelo botão “Entrar” em Empresas. A sessão guarda a empresa escolhida e o topo mostra em qual empresa ele está, com “Voltar ao escritório”.
+- `POST /api/auth/select-company` e `POST /api/auth/clear-company`.
+
+Alterado:
+
+- Usuário agora é cadastrado só pelo escritório: a tela `/usuarios` da empresa saiu. O admin da empresa continua importando cadastro e vinculando regra, mas não cria login nem empresa.
+- Rotas fiscais resolvem a empresa no servidor: usuário da empresa usa o vínculo dele, escritório usa a empresa aberta, e sem empresa aberta a resposta é `403 COMPANY_REQUIRED`.
+- Panorama mostra o nome da empresa da sessão no lugar do texto fixo “BAIFER”.
+
+Corrigido:
+
+- O login recusava e-mail sem domínio pontuado, então o administrador do escritório (`escritorio@local`) não entrava (“Informe e-mail e senha”). O login passa a comparar o e-mail como foi cadastrado; validação de formato fica no cadastro.
+
+Banco:
+
+- Coluna `active_company_id` em `sessions` (FK para `companies`, com índice) e policy de sessão com `WITH CHECK` explícito.
+
 ## v1.2.0 — 19/08/2026
 
 Adicionado:

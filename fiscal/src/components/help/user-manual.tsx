@@ -242,8 +242,9 @@ export function UserManual() {
             os produtos daquele NCM. Produtos da planilha não entram nesta tela.
           </p>
           <p>
-            O administrador cadastra, edita, exclui ou importa a planilha de regras. O perfil
-            consulta só lê.
+            O administrador cadastra, edita, exclui regra a regra, importa a planilha ou exclui a
+            base fiscal inteira (todas as regras da empresa). Os lotes de produtos continuam. O
+            perfil consulta só lê.
           </p>
           <ScreenLink href="/base-fiscal">Abrir Base fiscal</ScreenLink>
         </ManualCard>
@@ -281,8 +282,9 @@ export function UserManual() {
             este guia; marca e desmarca tratado; exporta Excel e PDF.
           </p>
           <p>
-            <strong>Administrador</strong>: tudo acima, mais importar e apagar lotes, cadastrar e
-            editar regras, vincular hipótese quando o NCM tem duas regras, empresas e usuários.
+            <strong>Administrador</strong>: tudo acima, mais importar e apagar lotes, cadastrar,
+            editar e excluir regras (incluindo a base fiscal inteira), vincular hipótese quando o
+            NCM tem duas regras, empresas e usuários.
           </p>
         </ManualCard>
       </article>

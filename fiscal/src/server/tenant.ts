@@ -1,8 +1,9 @@
 import "server-only";
 
 import { notFound } from "next/navigation";
-import type { AuthUser, CompanyAuthUser } from "./auth";
+import type { AuthUser } from "./auth";
 import { getCurrentUser } from "./auth";
+import { canWriteCompany, resolveCompanyScope } from "./company-scope";
 
 export class HttpError extends Error {
   constructor(
@@ -13,6 +14,17 @@ export class HttpError extends Error {
     super(message);
   }
 }
+
+/** Requisição já resolvida para uma empresa: companyId aqui é o tenant efetivo. */
+export type CompanySession = {
+  id: string;
+  email: string;
+  name: string;
+  role: AuthUser["role"];
+  companyId: string;
+  companyName: string;
+  fromOffice: boolean;
+};
 
 export async function requireUser(): Promise<AuthUser> {
   const user = await getCurrentUser();
@@ -28,26 +40,38 @@ export function requireSuperAdmin(user: AuthUser): void {
   }
 }
 
-export function requireAdmin(user: AuthUser): void {
-  if (user.role !== "admin" || !user.companyId) {
-    throw new HttpError(403, "FORBIDDEN", "Esta ação exige perfil administrador da empresa.");
-  }
-}
-
-export function requireCompanyUser(user: AuthUser): asserts user is CompanyAuthUser {
-  if (user.role === "superadmin" || !user.companyId) {
+export async function requireCompanySession(): Promise<CompanySession> {
+  const user = await requireUser();
+  const scope = resolveCompanyScope(user);
+  if (!scope) {
     throw new HttpError(
       403,
-      "FORBIDDEN",
-      "Esta ação é da empresa. Entre com o login cadastrado nela.",
+      "COMPANY_REQUIRED",
+      user.role === "superadmin"
+        ? "Escolha a empresa no painel do escritório antes de abrir a conferência."
+        : "Esta ação é da empresa. Entre com o login cadastrado nela.",
     );
   }
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    companyId: scope.companyId,
+    companyName: scope.companyName,
+    fromOffice: scope.fromOffice,
+  };
 }
 
-export async function requireCompanySession(): Promise<CompanyAuthUser> {
-  const user = await requireUser();
-  requireCompanyUser(user);
-  return user;
+export function requireCompanyAdmin(session: CompanySession): void {
+  const scope = {
+    companyId: session.companyId,
+    companyName: session.companyName,
+    fromOffice: session.fromOffice,
+  };
+  if (!canWriteCompany(session.role, scope)) {
+    throw new HttpError(403, "FORBIDDEN", "Esta ação exige perfil administrador da empresa.");
+  }
 }
 
 export function tenantWhere(companyId: string) {

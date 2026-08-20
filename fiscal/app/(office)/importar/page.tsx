@@ -26,7 +26,7 @@ export default function ImportarPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((json) => {
-        if (json.data?.role !== "admin") setForbidden(true);
+        if (!json.data?.canWrite) setForbidden(true);
       });
     void loadBatches();
   }, []);
@@ -111,7 +111,9 @@ export default function ImportarPage() {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
         <p className="mt-3 text-xs text-ink-muted">
-          Colunas reconhecidas: codigo, descricao, ncm, CST por destinatário, CST compra, alíquota, IVA/MVA, CEST.
+          Aceita vários layouts no mesmo fluxo: Santri/genérico (codigo, descricao, ncm, CST por
+          destinatário, CST compra, alíquota, IVA/MVA, CEST) e CSV Unica (Cód.Item, Novo NCM /
+          Classif. IPI, Desc. Abrev. ICMS). Cada arquivo vira um lote separado na conferência.
         </p>
         {batches.length > 0 ? (
           <label className="mt-4 flex items-start gap-2 text-sm text-ink">

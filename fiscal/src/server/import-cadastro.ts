@@ -25,11 +25,16 @@ const HEADER_MAP: Record<string, string> = {
   codigo: "codigo",
   código: "codigo",
   code: "codigo",
+  "cod.item": "codigo",
+  "cod item": "codigo",
   descricao: "descricao",
   descrição: "descricao",
   "nome do produto": "descricao",
   produto: "descricao",
   ncm: "ncm",
+  "novo ncm / classif. ipi": "ncm",
+  "novo ncm": "ncm",
+  "desc. abrev. icms": "descAbrevIcms",
   cest: "cest",
   aliquota: "aliquotaIcms",
   alíquota: "aliquotaIcms",
@@ -101,10 +106,14 @@ export function assertSafeUpload(fileName: string, size: number, mime: string): 
 function mapHeader(header: string): string | null {
   const folded = foldHeader(header);
   if (folded === "codigo original" || folded === "marca") return null;
+  if (folded.includes("abreviacao fiscal")) return null;
   if (folded.includes("iva") && folded.includes("venda")) return null;
+  if (folded.includes("abrev") && folded.includes("icms")) return "descAbrevIcms";
+  if (folded === "cod.item" || folded === "cod item" || folded.startsWith("cod.")) return "codigo";
   if (HEADER_MAP[folded]) return HEADER_MAP[folded];
   for (const [key, mapped] of Object.entries(HEADER_MAP)) {
     if (key.length < 3) continue;
+    if (mapped === "aliquotaIcms" && key === "icms" && folded.includes("abrev")) continue;
     if (folded.includes(key)) return mapped;
   }
   return null;
@@ -112,12 +121,38 @@ function mapHeader(header: string): string | null {
 
 function isCadastroHeader(cells: unknown[]): boolean {
   const folded = cells.map((c) => foldHeader(String(c ?? "")));
-  const hasCodigo = folded.some((c) => c === "codigo");
-  const hasNcm = folded.some((c) => c === "ncm");
+  const hasCodigo = folded.some(
+    (c) => c === "codigo" || c === "cod.item" || c === "cod item" || c.startsWith("cod."),
+  );
+  const hasNcm = folded.some((c) => c === "ncm" || c.includes("ncm"));
   const hasNome = folded.some(
     (c) => c === "nome do produto" || c === "descricao" || c === "produto",
   );
   return hasCodigo && hasNcm && hasNome;
+}
+
+/** Extrai CST e alíquota de valores Unica como "010 18 0" / "000 18 0". */
+export function parseDescAbrevIcms(raw: string | null | undefined): {
+  cstUnico: string | null;
+  aliquotaIcms: string | null;
+} {
+  const text = String(raw ?? "").trim();
+  if (!text) return { cstUnico: null, aliquotaIcms: null };
+  const match = text.match(/^(\d{1,3})\s+(\d{1,2}(?:[.,]\d+)?)\s+(\d+)\s*$/);
+  if (!match) return { cstUnico: null, aliquotaIcms: null };
+  return {
+    cstUnico: normalizeCst(match[1]),
+    aliquotaIcms: match[2].replace(",", "."),
+  };
+}
+
+function resolveCsvCodepage(buffer: Buffer): number {
+  if (buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
+    return 65001;
+  }
+  const sample = buffer.subarray(0, Math.min(buffer.length, 240)).toString("latin1");
+  if (/Cód\.Item|Descrição|Abreviação/i.test(sample)) return 1252;
+  return 65001;
 }
 
 export function findHeaderRowIndex(aoa: unknown[][]): number {
@@ -156,15 +191,15 @@ export function isJunkRow(codigo: string, descricao: string): boolean {
   return false;
 }
 
-function sheetLooksLikeCadastro(sheet: XLSX.WorkSheet): boolean {
-  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw: false });
+function sheetLooksLikeCadastro(sheet: XLSX.WorkSheet, raw: boolean): boolean {
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw });
   return findHeaderRowIndex(aoa) >= 0 && isCadastroHeader(aoa[findHeaderRowIndex(aoa)] ?? []);
 }
 
-function pickSheet(workbook: XLSX.WorkBook): string {
+function pickSheet(workbook: XLSX.WorkBook, raw: boolean): string {
   const names = workbook.SheetNames.filter((n) => !SKIP_SHEETS.has(n.trim().toLowerCase()));
   for (const name of names) {
-    if (sheetLooksLikeCadastro(workbook.Sheets[name])) return name;
+    if (sheetLooksLikeCadastro(workbook.Sheets[name], raw)) return name;
   }
   if (names.length === 0) {
     throw new Error("Nenhuma aba de cadastro válida no arquivo (abas BAIFER/LOJA não são cadastro).");
@@ -172,16 +207,21 @@ function pickSheet(workbook: XLSX.WorkBook): string {
   return names[0];
 }
 
-export function parseCadastroBuffer(buffer: Buffer, _ext: string): ParsedProduct[] {
-  const workbook = XLSX.read(buffer, { type: "buffer", raw: false });
-  const sheetName = pickSheet(workbook);
+export function parseCadastroBuffer(buffer: Buffer, ext: string): ParsedProduct[] {
+  const isCsv = ext.toLowerCase() === ".csv";
+  const raw = isCsv;
+  const readOpts: XLSX.ParsingOptions = { type: "buffer", raw };
+  if (isCsv) readOpts.codepage = resolveCsvCodepage(buffer);
+
+  const workbook = XLSX.read(buffer, readOpts);
+  const sheetName = pickSheet(workbook, raw);
   const sheet = workbook.Sheets[sheetName];
-  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw: false });
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "", raw });
   const headerRow = findHeaderRowIndex(aoa);
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     range: headerRow,
     defval: "",
-    raw: false,
+    raw,
   });
   return rows
     .map((row) => toProduct(row))
@@ -204,6 +244,10 @@ function toProduct(row: Record<string, unknown>): ParsedProduct | null {
   if (!codigo && !ncmOriginal && !descricao) return null;
   if (!codigo) return null;
 
+  const fromAbrev = parseDescAbrevIcms(mapped.descAbrevIcms);
+  const aliquotaIcms = mapped.aliquotaIcms || fromAbrev.aliquotaIcms || null;
+  const cstUnico = normalizeCst(mapped.cstUnico) ?? fromAbrev.cstUnico;
+
   const destinos: DestinosCst = {
     naoContribuinte: mapped.naoContribuinte || null,
     contribuinte: mapped.contribuinte || null,
@@ -221,12 +265,12 @@ function toProduct(row: Record<string, unknown>): ParsedProduct | null {
     descricao: descricao || codigo,
     ncm: normalizeNcm(ncmOriginal),
     ncmOriginal,
-    aliquotaIcms: mapped.aliquotaIcms || null,
+    aliquotaIcms,
     ivaMva: mapped.ivaMva || null,
     ivaMvaNumero: parseMvaNumber(mapped.ivaMva),
     cest: mapped.cest || null,
     cstCompra: normalizeCst(mapped.cstCompra),
-    cstUnico: normalizeCst(mapped.cstUnico),
+    cstUnico,
     destinosCst: filled > 0 ? destinos : null,
   };
 }

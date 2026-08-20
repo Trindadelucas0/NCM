@@ -10,8 +10,10 @@ import {
 import { jsonError, jsonOk } from "@/src/server/http";
 import { loginAllowed, loginFailed, loginSucceeded } from "@/src/server/rate-limit";
 
+// Login não valida formato: aceita o e-mail exatamente como foi cadastrado
+// (inclusive interno, tipo escritorio@local). Quem valida formato é o cadastro.
 const schema = z.object({
-  email: z.string().email().max(180),
+  email: z.string().trim().min(3).max(180),
   password: z.string().min(1).max(200),
 });
 

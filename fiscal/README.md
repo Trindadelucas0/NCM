@@ -26,9 +26,9 @@ npm run dev
 
 3. Abra `http://localhost:3000` e entre só com e-mail e senha:
 
-- Escritório: `SEED_SUPERADMIN_EMAIL`
-- BAIFER: `admin@baifer.local`
-- Loja: `admin@loja.local`
+- Escritório: `SEED_SUPERADMIN_EMAIL` — cai no painel das empresas; cadastra empresa/usuário e usa “Entrar” para abrir a conferência de uma empresa
+- BAIFER: `admin@baifer.local` — abre direto a conferência da BAIFER
+- Loja: `admin@loja.local` — abre direto a conferência da Loja
 
 Senha das empresas: `SEED_ADMIN_PASSWORD`. Senha do escritório: `SEED_SUPERADMIN_PASSWORD`. O seed **não apaga** planilhas já importadas. Para zerar só o cadastro: `SEED_RESET_CADASTRO=1 npm run db:seed`.
 

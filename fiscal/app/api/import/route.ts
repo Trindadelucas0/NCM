@@ -16,12 +16,12 @@ import {
 } from "@/src/server/import-cadastro";
 import { indexRulesByNcm, scoreParsedProducts } from "@/src/server/import-score";
 import { carryTreatedMarker, indexPreviousMarkers } from "@/src/server/treated-carry";
-import { requireAdmin, requireCompanySession } from "@/src/server/tenant";
+import { requireCompanyAdmin, requireCompanySession } from "@/src/server/tenant";
 
 export async function POST(request: Request) {
   try {
     const user = await requireCompanySession();
-    requireAdmin(user);
+    requireCompanyAdmin(user);
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) {
