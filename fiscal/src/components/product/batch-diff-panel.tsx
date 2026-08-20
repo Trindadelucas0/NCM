@@ -99,10 +99,19 @@ export function BatchDiffPanel({ lote, summaryOnly = false }: { lote: string | n
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
+  const highlighted = value > 0;
   return (
-    <div className="rounded-md bg-paper-sunken px-3 py-2">
+    <div
+      className={`rounded-md px-3 py-2 ${
+        highlighted
+          ? "border-l-4 border-brand bg-brand-soft shadow-brand-sm"
+          : "bg-paper-sunken"
+      }`}
+    >
       <dt className="text-[11px] uppercase tracking-wide text-ink-muted">{label}</dt>
-      <dd className="font-display text-xl tabular">{value}</dd>
+      <dd className={`font-display text-xl tabular ${highlighted ? "text-status-ok" : "text-ink-muted"}`}>
+        {value}
+      </dd>
     </div>
   );
 }

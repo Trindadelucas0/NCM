@@ -96,13 +96,13 @@ export function DivergenceCard({ item }: { item: DivergenceItem }) {
         ) : item.status !== "CORRETO" && !item.needsLink ? (
           <p className="text-sm text-ink">{item.motivo}</p>
         ) : item.status === "CORRETO" ? (
-          <p className="rounded-md bg-status-ok-bg px-3 py-2 text-sm text-status-ok">
+          <p className="rounded-md border-l-4 border-brand bg-brand-soft px-3 py-2 text-sm font-medium text-status-ok shadow-brand-sm">
             O cadastro importado bate com a regra deste NCM.
           </p>
         ) : null}
 
         {item.correto && item.diffs.length > 0 ? (
-          <dl className="grid gap-3 rounded-md border border-line bg-paper-sunken px-3 py-3 sm:grid-cols-4">
+          <dl className="grid gap-3 rounded-md border border-brand-line border-l-4 border-l-brand bg-brand-soft px-3 py-3 shadow-brand-sm sm:grid-cols-4">
             <Meta label="CST entrada correto" value={item.correto.cstEntrada ?? "—"} />
             <Meta label="CST saída correto" value={item.correto.cstSaida ?? "—"} />
             <Meta label="CFOP saída correto" value={item.correto.cfopSaida ?? "—"} />

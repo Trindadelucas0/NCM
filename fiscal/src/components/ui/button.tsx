@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 const variants = {
   primary:
-    "bg-brand text-white hover:bg-brand-hover disabled:bg-line disabled:text-ink-muted",
+    "bg-brand text-white shadow-brand-sm hover:bg-brand-hover disabled:bg-line disabled:text-ink-muted disabled:shadow-none",
   secondary:
     "bg-white text-ink border border-line-strong hover:bg-paper-sunken disabled:opacity-50",
   ghost: "bg-transparent text-ink hover:bg-paper-sunken disabled:opacity-50",
