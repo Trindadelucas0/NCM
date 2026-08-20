@@ -250,11 +250,11 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
             <Item label="NCM do cadastro (cliente)" value={data.product.ncm || "(vazio)"} />
             <Item label="NCM da regra da empresa" value={data.guide?.ncm ?? "—"} />
             <Item label="Situação" value={data.guide?.situacao ?? "—"} />
-            <Item label="CST nota de entrada" value={data.guide?.cstEntrada ?? "—"} />
+            <Item label="CST nota de entrada" value={data.guide?.cstEntrada ?? "—"} emphasis />
             <Item label="CST da empresa (saída)" value={data.guide?.cstBaifer ?? "—"} />
             <Item label="CFOP de saída" value={data.guide?.cfopSaida ?? "—"} />
-            <Item label="MVA" value={data.guide?.mva ?? "—"} />
-            <Item label="CFOP de entrada" value={data.guide?.cfopEntradaNota ?? "—"} />
+            <Item label="MVA" value={data.guide?.mva ?? "—"} emphasis />
+            <Item label="CFOP de entrada" value={data.guide?.cfopEntradaNota ?? "—"} emphasis />
           </dl>
           <div className="md:hidden">
             <CstMatrix layout="stacked" ideal={data.compare.rule?.destinosCst} />
@@ -276,11 +276,22 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
   );
 }
 
-function Item({ label, value }: { label: string; value: string }) {
+function Item({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
+  if (!emphasis) {
+    return (
+      <div className="rounded-md border border-line px-3 py-2">
+        <dt className="text-xs uppercase tracking-wide text-ink-muted">{label}</dt>
+        <dd className="mt-1 text-sm">{value}</dd>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-ink-muted">{label}</dt>
-      <dd className="mt-1 text-sm">{value}</dd>
+    <div className="rounded-md border border-brand-line border-l-4 border-l-brand bg-brand-soft px-3 py-2 shadow-brand-sm">
+      <dt className="text-xs font-medium uppercase tracking-wide text-status-ok">
+        {label} · use este valor
+      </dt>
+      <dd className="mt-1 text-sm font-semibold text-ink">{value}</dd>
     </div>
   );
 }

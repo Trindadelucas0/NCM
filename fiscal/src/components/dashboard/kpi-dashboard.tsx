@@ -50,11 +50,13 @@ export function KpiDashboard() {
               label="Corretos"
               value={active.corretos}
               href={`/consulta?status=CORRETO&lote=${encodeURIComponent(batchId)}`}
+              tone="ok"
             />
             <Kpi
               label="Divergentes"
               value={active.divergentes}
               href={`/divergencias?lote=${encodeURIComponent(batchId)}`}
+              tone="bad"
             />
             <Kpi
               label="Análise"
@@ -69,14 +71,37 @@ export function KpiDashboard() {
   );
 }
 
-function Kpi({ label, value, href }: { label: string; value: number; href: string }) {
+const KPI_TONES = {
+  neutral: { card: "border-line bg-white hover:border-brand hover:shadow-brand-sm", value: "text-ink" },
+  ok: {
+    card: "border-brand border-l-4 bg-brand-soft shadow-brand-sm hover:shadow-brand",
+    value: "text-status-ok",
+  },
+  bad: {
+    card: "border-status-bad border-l-4 bg-status-bad-bg hover:shadow-panel",
+    value: "text-status-bad",
+  },
+} as const;
+
+function Kpi({
+  label,
+  value,
+  href,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  href: string;
+  tone?: keyof typeof KPI_TONES;
+}) {
+  const style = KPI_TONES[tone];
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-line bg-white p-4 hover:border-brand hover:bg-paper-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className={`block rounded-lg border p-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${style.card}`}
     >
       <span className="block text-[11px] font-medium uppercase tracking-wide text-ink-muted">{label}</span>
-      <span className="mt-1 block font-display text-xl tabular text-ink sm:text-2xl">{value}</span>
+      <span className={`mt-1 block font-display text-xl tabular sm:text-2xl ${style.value}`}>{value}</span>
     </Link>
   );
 }

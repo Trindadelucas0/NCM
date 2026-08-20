@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Field } from "@/src/components/ui/field";
+import { Notice } from "@/src/components/ui/notice";
 import { PageHeader } from "@/src/components/ui/page-header";
 
 type CompanyRow = { id: string; name: string; slug: string; createdAt: string };
@@ -125,12 +126,8 @@ export default function EscritorioEmpresasPage() {
           value={adminPassword}
           onChange={(e) => setAdminPassword(e.target.value)}
         />
-        {error ? (
-          <p role="alert" className="text-sm text-status-bad">
-            {error}
-          </p>
-        ) : null}
-        {success ? <p className="text-sm text-status-ok">{success}</p> : null}
+        {error ? <Notice variant="error">{error}</Notice> : null}
+        {success ? <Notice variant="success">{success}</Notice> : null}
         <Button type="submit" disabled={saving}>
           {saving ? "Cadastrando…" : "Cadastrar empresa"}
         </Button>

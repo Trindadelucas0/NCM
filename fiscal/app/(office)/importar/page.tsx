@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BatchDiffPanel } from "@/src/components/product/batch-diff-panel";
 import { Button } from "@/src/components/ui/button";
+import { Notice } from "@/src/components/ui/notice";
 import { PageHeader } from "@/src/components/ui/page-header";
 import { clearImportListCache, type BatchOption } from "@/src/components/product/batch-selector";
 
@@ -131,8 +132,8 @@ export default function ImportarPage() {
             {status === "loading" ? "Importando…" : "Importar planilha"}
           </Button>
         </div>
-        {status === "ok" ? <p className="mt-4 text-sm text-status-ok">{message}</p> : null}
-        {status === "error" ? <p className="mt-4 text-sm text-status-bad">{message}</p> : null}
+        {status === "ok" ? <Notice variant="success" className="mt-4">{message}</Notice> : null}
+        {status === "error" ? <Notice variant="error" className="mt-4">{message}</Notice> : null}
       </form>
 
       <section className="grid gap-3">

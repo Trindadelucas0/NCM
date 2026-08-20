@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Field } from "@/src/components/ui/field";
+import { Notice } from "@/src/components/ui/notice";
 import { PageHeader } from "@/src/components/ui/page-header";
 
 type UserRow = { id: string; name: string; email: string; role: "admin" | "consulta"; createdAt: string };
@@ -117,12 +118,8 @@ export default function UsuariosPage() {
             <option value="admin">Administrador</option>
           </select>
         </label>
-        {error ? (
-          <p role="alert" className="text-sm text-status-bad">
-            {error}
-          </p>
-        ) : null}
-        {success ? <p className="text-sm text-status-ok">{success}</p> : null}
+        {error ? <Notice variant="error">{error}</Notice> : null}
+        {success ? <Notice variant="success">{success}</Notice> : null}
         <Button type="submit" disabled={saving}>
           {saving ? "Cadastrando…" : "Cadastrar usuário"}
         </Button>

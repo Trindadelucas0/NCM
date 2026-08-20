@@ -25,6 +25,7 @@ const config: Config = {
           DEFAULT: "#2EA44F",
           hover: "#248A41",
           soft: "#DFF0E4",
+          line: "#8FD3A6",
         },
         status: {
           ok: "#1F7A45",
@@ -41,6 +42,8 @@ const config: Config = {
       },
       boxShadow: {
         panel: "0 1px 2px rgba(26, 31, 36, 0.06)",
+        brand: "0 0 0 1px rgba(46, 164, 79, 0.45), 0 12px 28px -14px rgba(46, 164, 79, 0.65)",
+        "brand-sm": "0 1px 8px -2px rgba(46, 164, 79, 0.45)",
       },
       borderRadius: {
         sm: "4px",

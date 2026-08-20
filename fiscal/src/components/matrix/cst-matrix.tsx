@@ -66,15 +66,21 @@ export function CstMatrix({
               <dt className="text-xs uppercase tracking-wide text-ink-muted">{item.label}</dt>
               {includeAtual ? (
                 <dd className="mt-1 grid gap-1 text-sm">
-                  <span className={`tabular ${mismatch ? "bg-status-bad-bg text-status-bad" : ""}`}>
+                  <span
+                    className={`rounded-sm px-1.5 py-0.5 tabular ${
+                      mismatch ? "bg-status-bad-bg text-status-bad" : ""
+                    }`}
+                  >
                     Importado: {displayCst(item.atual)}
                   </span>
-                  <span className={`tabular ${mismatch ? "bg-status-ok-bg text-status-ok" : ""}`}>
+                  <span className="rounded-sm border-l-2 border-brand bg-brand-soft px-1.5 py-0.5 font-medium tabular text-status-ok">
                     Como deve ficar: {displayCst(item.ideal)}
                   </span>
                 </dd>
               ) : (
-                <dd className="mt-1 text-sm tabular">{displayCst(item.ideal)}</dd>
+                <dd className="mt-1 w-fit rounded-sm border-l-2 border-brand bg-brand-soft px-1.5 py-0.5 text-sm font-medium tabular text-status-ok">
+                  {displayCst(item.ideal)}
+                </dd>
               )}
             </div>
           );
@@ -134,7 +140,7 @@ export function CstMatrix({
               })}
             </tr>
           ) : null}
-          <tr>
+          <tr className="linha-destaque">
             <th scope="row" className="sticky-col sticky-col-1 font-medium">
               Como deve ficar
             </th>
@@ -146,7 +152,7 @@ export function CstMatrix({
                   return (
                     <td
                       key={key}
-                      className={`tabular ${mismatch ? "bg-status-ok-bg text-status-ok" : ""}`}
+                      className={`tabular ${mismatch ? "font-semibold text-status-ok ring-1 ring-inset ring-brand" : ""}`}
                     >
                       {displayCst(correct)}
                     </td>
@@ -158,7 +164,7 @@ export function CstMatrix({
               return (
                 <td
                   key={extra.key}
-                  className={`tabular ${mismatch ? "bg-status-ok-bg text-status-ok" : ""}`}
+                  className={`tabular ${mismatch ? "font-semibold text-status-ok ring-1 ring-inset ring-brand" : ""}`}
                 >
                   {displayCst(extra.ideal)}
                 </td>

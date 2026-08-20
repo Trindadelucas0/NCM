@@ -17,7 +17,7 @@ export function DiffTable({ diffs }: { diffs: FieldDiff[] }) {
             <th scope="col" className="px-3 py-2.5 font-medium">
               Importado (errado)
             </th>
-            <th scope="col" className="px-3 py-2.5 font-medium">
+            <th scope="col" className="border-l-2 border-brand bg-brand-soft px-3 py-2.5 font-medium text-status-ok">
               Como deve ficar
             </th>
           </tr>
@@ -31,7 +31,7 @@ export function DiffTable({ diffs }: { diffs: FieldDiff[] }) {
               <td className="bg-status-bad-bg px-3 py-2.5 tabular text-status-bad">
                 {diff.atual}
               </td>
-              <td className="bg-status-ok-bg px-3 py-2.5 tabular text-status-ok">
+              <td className="border-l-2 border-brand bg-brand-soft px-3 py-2.5 font-semibold tabular text-status-ok">
                 {diff.ideal}
               </td>
             </tr>
@@ -49,9 +49,9 @@ export function DiffTable({ diffs }: { diffs: FieldDiff[] }) {
                 <dt className="text-xs text-status-bad">Importado</dt>
                 <dd className="mt-0.5 tabular font-medium text-status-bad">{diff.atual}</dd>
               </div>
-              <div className="rounded-md bg-status-ok-bg px-2.5 py-2">
+              <div className="rounded-md border-l-4 border-brand bg-brand-soft px-2.5 py-2 shadow-brand-sm">
                 <dt className="text-xs text-status-ok">Como deve ficar</dt>
-                <dd className="mt-0.5 tabular font-medium text-status-ok">{diff.ideal}</dd>
+                <dd className="mt-0.5 tabular font-semibold text-status-ok">{diff.ideal}</dd>
               </div>
             </dl>
           </li>

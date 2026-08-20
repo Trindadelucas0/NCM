@@ -74,6 +74,20 @@ body {
   background: #dff0e4;
 }
 
+.fiscal-grid tbody tr[data-selected="true"] > *:first-child {
+  box-shadow: inset 3px 0 0 #2ea44f;
+}
+
+.fiscal-grid tbody tr.linha-destaque > * {
+  background: #dff0e4;
+  color: #1a1f24;
+  font-weight: 500;
+}
+
+.fiscal-grid tbody tr.linha-destaque > *:first-child {
+  box-shadow: inset 3px 0 0 #2ea44f;
+}
+
 .fiscal-grid tbody tr:focus-visible {
   outline: 2px solid #2ea44f;
   outline-offset: -2px;

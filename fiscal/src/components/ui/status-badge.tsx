@@ -4,11 +4,17 @@ const MAP: Record<
   StatusFiscal,
   { label: string; className: string }
 > = {
-  CORRETO: { label: "Correto", className: "bg-status-ok-bg text-status-ok" },
-  DIVERGENTE: { label: "Divergente", className: "bg-status-bad-bg text-status-bad" },
+  CORRETO: {
+    label: "Correto",
+    className: "bg-brand-soft text-status-ok ring-1 ring-brand shadow-brand-sm",
+  },
+  DIVERGENTE: {
+    label: "Divergente",
+    className: "bg-status-bad-bg text-status-bad ring-1 ring-status-bad/40",
+  },
   NECESSITA_ANALISE: {
     label: "Necessita análise",
-    className: "bg-status-warn-bg text-status-warn",
+    className: "bg-status-warn-bg text-status-warn ring-1 ring-line-strong/40",
   },
 };
 

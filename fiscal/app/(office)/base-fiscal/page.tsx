@@ -6,6 +6,7 @@ import { RULE_SHEET_COLUMNS, type RuleSheetItem } from "@/src/components/grid/ru
 import { CstMatrix } from "@/src/components/matrix/cst-matrix";
 import { emptyRuleForm, RuleEditor, type RuleFormState } from "@/src/components/rules/rule-editor";
 import { PageHeader } from "@/src/components/ui/page-header";
+import { Notice } from "@/src/components/ui/notice";
 import { Pagination } from "@/src/components/ui/pagination";
 import { SheetToolbar } from "@/src/components/ui/sheet-toolbar";
 import { Button } from "@/src/components/ui/button";
@@ -267,8 +268,8 @@ export default function BaseFiscalPage() {
           </div>
         ) : null}
       </SheetToolbar>
-      {error ? <p role="alert" className="text-sm text-status-bad">{error}</p> : null}
-      {success ? <p className="text-sm text-status-ok">{success}</p> : null}
+      {error ? <Notice variant="error">{error}</Notice> : null}
+      {success ? <Notice variant="success">{success}</Notice> : null}
       <p className="text-sm text-ink-muted">
         {loading
           ? "Carregando regras…"
@@ -302,9 +303,9 @@ export default function BaseFiscalPage() {
           </div>
         </div>
         {highlight ? (
-          <aside className="hidden rounded-lg border border-line bg-white p-4 xl:block">
-            <p className="text-xs uppercase tracking-wide text-ink-muted">Linha selecionada</p>
-            <h2 className="mt-1 font-display text-2xl tabular">{highlight.ncm}</h2>
+          <aside className="hidden rounded-lg border border-brand bg-white p-4 shadow-brand xl:block">
+            <p className="text-xs font-medium uppercase tracking-wide text-status-ok">Linha selecionada</p>
+            <h2 className="mt-1 font-display text-2xl tabular text-brand">{highlight.ncm}</h2>
             <p className="text-sm text-ink-muted">
               {highlight.segmento} · {highlight.situacaoCodigo} · MVA {highlight.mvaTexto ?? "—"}
             </p>
