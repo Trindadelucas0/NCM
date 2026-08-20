@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, ownedWhere, requireAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, ownedWhere, requireAdmin, requireCompanySession } from "@/src/server/tenant";
 import { withTenant } from "@/src/server/db";
 import { asDestinos } from "@/src/server/compare";
 import { ruleBodySchema, ruleWriteData } from "@/src/server/rule-write";
@@ -10,7 +10,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const { id } = await context.params;
     const rule = await withTenant(user.companyId, (db) =>
       db.fiscalNcmRule.findFirst({ where: ownedWhere(id, user.companyId) }),
@@ -27,7 +27,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const { id } = await context.params;
     const patch = ruleBodySchema.partial().parse(await request.json());
@@ -85,7 +85,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const { id } = await context.params;
     await withTenant(user.companyId, async (db) => {

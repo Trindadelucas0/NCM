@@ -1,14 +1,14 @@
 import { BATCH_COOKIE, batchCookieOptions, listImportBatches, requireOwnedBatch } from "@/src/server/batch";
 import { withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { requireAdmin, requireUser } from "@/src/server/tenant";
+import { requireAdmin, requireCompanySession } from "@/src/server/tenant";
 
 export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const { id } = await context.params;
     await requireOwnedBatch(user.companyId, id);
@@ -41,7 +41,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const { id } = await context.params;
     const batch = await requireOwnedBatch(user.companyId, id);
     return jsonOk({

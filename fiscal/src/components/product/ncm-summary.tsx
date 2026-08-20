@@ -82,7 +82,7 @@ export function NcmSummary({
               <button
                 type="button"
                 className={`min-h-11 rounded-md border px-3 text-sm tabular ${
-                  active ? "border-brand bg-brand text-white" : "border-line bg-paper hover:bg-white"
+                  active ? "border-brand bg-brand text-white" : "border-line bg-paper-sunken hover:bg-brand-soft"
                 }`}
                 onClick={() => onSelect(active ? "" : group.ncm)}
               >

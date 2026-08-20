@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { requireUser } from "@/src/server/tenant";
+import { requireCompanySession } from "@/src/server/tenant";
 import { markProductsTreated } from "@/src/server/treated-mark";
 
 const schema = z.object({
@@ -13,7 +13,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const { id } = await context.params;
     const body = schema.parse(await request.json());
     const updated = await markProductsTreated({

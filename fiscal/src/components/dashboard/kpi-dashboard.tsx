@@ -73,7 +73,7 @@ function Kpi({ label, value, href }: { label: string; value: number; href: strin
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-line bg-white p-4 hover:bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className="block rounded-lg border border-line bg-white p-4 hover:border-brand hover:bg-paper-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <span className="block text-[11px] font-medium uppercase tracking-wide text-ink-muted">{label}</span>
       <span className="mt-1 block font-display text-xl tabular text-ink sm:text-2xl">{value}</span>

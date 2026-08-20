@@ -217,7 +217,7 @@ function ExpandedProduct({
     <div className="grid gap-3 text-sm">
       <p className="text-ink">{motivo}</p>
       {item.treated ? (
-        <p className="rounded-md border border-line bg-paper px-3 py-2">
+        <p className="rounded-md border border-line bg-paper-sunken px-3 py-2">
           {item.treatedStale
             ? "Tratado no lote anterior — a situação fiscal mudou. Confira de novo ou desmarque na ficha."
             : "Já tratado nesta fila."}

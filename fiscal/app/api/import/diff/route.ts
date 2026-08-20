@@ -3,7 +3,7 @@ import { diffBatchRows, filterDiffItems, type BatchDiffKind } from "@/src/server
 import { withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
 import { parseProductListParams } from "@/src/server/product-query";
-import { requireUser } from "@/src/server/tenant";
+import { requireCompanySession } from "@/src/server/tenant";
 
 const KINDS = new Set<BatchDiffKind>([
   "added",
@@ -15,7 +15,7 @@ const KINDS = new Set<BatchDiffKind>([
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const url = new URL(request.url);
     const lote = (url.searchParams.get("lote") ?? "").trim();
     if (!lote) {

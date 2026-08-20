@@ -16,11 +16,11 @@ import {
 } from "@/src/server/import-cadastro";
 import { indexRulesByNcm, scoreParsedProducts } from "@/src/server/import-score";
 import { carryTreatedMarker, indexPreviousMarkers } from "@/src/server/treated-carry";
-import { requireAdmin, requireUser } from "@/src/server/tenant";
+import { requireAdmin, requireCompanySession } from "@/src/server/tenant";
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const form = await request.formData();
     const file = form.get("file");
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const batches = await listImportBatches(user.companyId);
     const cookieLote = await readBatchCookie();
     const activeBatchId = resolveDisplayedBatchId(batches, null, cookieLote) || null;

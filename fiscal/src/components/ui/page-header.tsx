@@ -10,7 +10,7 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex flex-col gap-4 border-b-2 border-line-strong pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div>
         {kicker ? (
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-ink-muted">

@@ -1,12 +1,12 @@
 # API
 
 Autenticação: cookie `fiscal_session` (HttpOnly, SameSite=Lax, Secure em produção).  
-Todas as rotas de negócio exigem sessão válida. Mutações de importação/vínculo exigem papel `admin`. Marcar “já tratado” vale para admin e consulta.  
+Todas as rotas de negócio exigem sessão válida. Rotas fiscais exigem login da empresa (não o do escritório). Mutações de importação/vínculo exigem papel `admin` da empresa. Marcar “já tratado” vale para admin e consulta.  
 Respostas: `{ success, data }` ou `{ success: false, error: { code, message } }`.
 
 | Método | Rota | Auth | Função |
 | --- | --- | --- | --- |
-| POST | `/api/auth/login` | pública + rate limit | autentica |
+| POST | `/api/auth/login` | pública + rate limit | autentica (e-mail e senha); devolve `redirectTo` |
 | POST | `/api/auth/logout` | sessão | encerra cookie |
 | GET | `/api/auth/me` | sessão | usuário e empresa |
 | GET | `/api/dashboard` | sessão | totais do lote ativo (`lote`) |
@@ -24,7 +24,11 @@ Respostas: `{ success, data }` ou `{ success: false, error: { code, message } }`
 | POST | `/api/import/select` | sessão | escolhe o lote ativo (cookie HttpOnly) |
 | DELETE | `/api/import/:id` | admin | apaga um lote; outro tenant → 404; regras NCM intactas |
 | GET | `/api/export/excel` | sessão | Excel; `status=DIVERGENTE\|CORRETO\|NECESSITA_ANALISE` (vazio = todos); `somente=divergentes\|corretos\|analise\|todos` (legado); `tratado=nao` oculta já tratados |
-| GET | `/api/export/pdf` | sessão | PDF A4 paisagem; mesmos filtros; texto escapado |
+| GET | `/api/export/pdf` | sessão da empresa | PDF A4 paisagem; mesmos filtros; texto escapado |
+| GET | `/api/companies` | superadmin | lista empresas |
+| POST | `/api/companies` | superadmin | cria empresa e o primeiro admin |
+| GET | `/api/users` | admin da empresa ou superadmin | lista usuários (`companyId` obrigatório para o escritório) |
+| POST | `/api/users` | admin da empresa ou superadmin | cria usuário (`companyId` no body só para o escritório; papel só `admin` ou `consulta`) |
 
 Login inválido: `401` sem distinguir se o e-mail existe.  
 Sem permissão: `403`.  

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { BATCH_COOKIE, batchCookieOptions, requireOwnedBatch } from "@/src/server/batch";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { requireUser } from "@/src/server/tenant";
+import { requireCompanySession } from "@/src/server/tenant";
 
 const schema = z.object({
   batchId: z.string().min(1).max(64),
@@ -10,7 +10,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const body = schema.parse(await request.json());
     await requireOwnedBatch(user.companyId, body.batchId);
     const response = jsonOk({ batchId: body.batchId });

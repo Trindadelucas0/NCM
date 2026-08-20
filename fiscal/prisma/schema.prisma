@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   admin
   consulta
+  superadmin
 }
 
 model Company {
@@ -30,33 +31,32 @@ model Company {
 
 model User {
   id           String   @id @default(cuid())
-  companyId    String   @map("company_id")
-  email        String
+  companyId    String?  @map("company_id")
+  email        String   @unique
   passwordHash String   @map("password_hash")
   name         String
   role         UserRole
   createdAt    DateTime @default(now()) @map("created_at")
 
-  company  Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  company  Company?      @relation(fields: [companyId], references: [id], onDelete: Restrict)
   sessions Session[]
   batches  ImportBatch[]
   treated  Product[]     @relation("ProductTreatedBy")
 
-  @@unique([companyId, email])
   @@index([companyId])
   @@map("users")
 }
 
 model Session {
   id        String   @id @default(cuid())
-  companyId String   @map("company_id")
+  companyId String?  @map("company_id")
   userId    String   @map("user_id")
   tokenHash String   @unique @map("token_hash")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId, userId])
   @@map("sessions")

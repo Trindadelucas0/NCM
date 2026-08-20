@@ -10,7 +10,7 @@ export async function GET() {
       email: user.email,
       role: user.role,
       companyId: user.companyId,
-      companyName: user.companyName,
+      companyName: user.companyName ?? (user.role === "superadmin" ? "Escritório" : null),
     });
   } catch (error) {
     return jsonError(error);

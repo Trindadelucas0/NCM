@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { postLoginPath } from "@/src/lib/auth-home";
 import { loginAllowed, loginFailed, loginSucceeded } from "./rate-limit";
-import { ownedWhere } from "./tenant";
+import { HttpError, ownedWhere, requireAdmin, requireCompanyUser, requireSuperAdmin } from "./tenant";
 import { escapeHtml } from "@/src/lib/html";
 
 describe("senha inválida", () => {
@@ -11,16 +12,49 @@ describe("senha inválida", () => {
     expect(ok).toBe(false);
   });
 
-  it("login exige empresa: BAIFER e Loja não compartilham o mesmo user", () => {
+  it("login por e-mail único abre só a conta cadastrada", () => {
     const users = [
       { email: "admin@baifer.local", companySlug: "baifer" },
       { email: "admin@loja.local", companySlug: "loja" },
     ];
-    const pick = (email: string, slug: string) =>
-      users.find((u) => u.email === email && u.companySlug === slug) ?? null;
-    expect(pick("admin@baifer.local", "loja")).toBeNull();
-    expect(pick("admin@loja.local", "baifer")).toBeNull();
-    expect(pick("admin@baifer.local", "baifer")?.companySlug).toBe("baifer");
+    const pick = (email: string) => users.find((u) => u.email === email) ?? null;
+    expect(pick("admin@baifer.local")?.companySlug).toBe("baifer");
+    expect(pick("admin@loja.local")?.companySlug).toBe("loja");
+    expect(pick("admin@baifer.local")?.companySlug).not.toBe("loja");
+  });
+});
+
+describe("papéis", () => {
+  const office = {
+    id: "office",
+    companyId: null,
+    email: "escritorio@local",
+    name: "Escritório",
+    role: "superadmin" as const,
+    companyName: null,
+  };
+  const baiferAdmin = {
+    id: "baifer-admin",
+    companyId: "cm_baifer_seed_company",
+    email: "admin@baifer.local",
+    name: "Administrador",
+    role: "admin" as const,
+    companyName: "BAIFER",
+  };
+
+  it("superadmin cai no painel do escritório", () => {
+    expect(postLoginPath("superadmin")).toBe("/escritorio/empresas");
+    expect(postLoginPath("admin")).toBe("/dashboard");
+    expect(postLoginPath("consulta")).toBe("/dashboard");
+  });
+
+  it("admin da BAIFER não cadastra empresas; superadmin não acessa API fiscal", () => {
+    expect(() => requireSuperAdmin(baiferAdmin)).toThrow(HttpError);
+    expect(() => requireAdmin(office)).toThrow(HttpError);
+    expect(() => requireCompanyUser(office)).toThrow(HttpError);
+    expect(() => requireSuperAdmin(office)).not.toThrow();
+    expect(() => requireAdmin(baiferAdmin)).not.toThrow();
+    expect(() => requireCompanyUser(baiferAdmin)).not.toThrow();
   });
 });
 

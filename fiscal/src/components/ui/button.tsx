@@ -4,8 +4,8 @@ const variants = {
   primary:
     "bg-brand text-white hover:bg-brand-hover disabled:bg-line disabled:text-ink-muted",
   secondary:
-    "bg-white text-ink border border-line hover:bg-paper disabled:opacity-50",
-  ghost: "bg-transparent text-ink hover:bg-white disabled:opacity-50",
+    "bg-white text-ink border border-line-strong hover:bg-paper-sunken disabled:opacity-50",
+  ghost: "bg-transparent text-ink hover:bg-paper-sunken disabled:opacity-50",
   danger: "bg-status-bad text-white hover:opacity-90 disabled:opacity-50",
 };
 

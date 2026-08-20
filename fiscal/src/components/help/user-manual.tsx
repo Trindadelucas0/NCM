@@ -326,7 +326,7 @@ function ScreenLink({ href, children }: { href: string; children: ReactNode }) {
 
 function TermList({ items }: { items: { term: string; meaning: string }[] }) {
   return (
-    <dl className="grid gap-3 rounded-md bg-paper px-4 py-3">
+    <dl className="grid gap-3 rounded-md bg-paper-sunken px-4 py-3">
       {items.map((item) => (
         <div key={item.term}>
           <dt className="font-medium text-ink">{item.term}</dt>

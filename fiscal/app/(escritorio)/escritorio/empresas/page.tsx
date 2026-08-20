@@ -7,7 +7,7 @@ import { PageHeader } from "@/src/components/ui/page-header";
 
 type CompanyRow = { id: string; name: string; slug: string; createdAt: string };
 
-export default function EmpresasPage() {
+export default function EscritorioEmpresasPage() {
   const [forbidden, setForbidden] = useState(false);
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ export default function EmpresasPage() {
     setError("");
     try {
       const me = await fetch("/api/auth/me").then((r) => r.json());
-      if (me.data?.role !== "admin") {
+      if (me.data?.role !== "superadmin") {
         setForbidden(true);
         return;
       }
@@ -58,7 +58,7 @@ export default function EmpresasPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error?.message ?? "Não foi possível cadastrar.");
       setSuccess(
-        `Empresa “${json.data.company.name}” criada. Saia e entre com ${json.data.admin.email} nessa empresa para cadastrar as regras.`,
+        `Empresa “${json.data.company.name}” criada. Entre com ${json.data.admin.email} para abrir o painel fiscal dela.`,
       );
       setName("");
       setSlug("");
@@ -75,16 +75,16 @@ export default function EmpresasPage() {
 
   if (forbidden) {
     return (
-      <p className="text-sm text-status-bad">Somente administradores podem cadastrar empresas.</p>
+      <p className="text-sm text-status-bad">Somente o administrador do escritório cadastra empresas.</p>
     );
   }
 
   return (
     <div className="grid gap-8">
       <PageHeader
-        kicker="Administração"
+        kicker="Escritório"
         title="Empresas"
-        description="Cadastre uma empresa nova com o primeiro administrador. Para editar regras e produtos dela, entre com esse login."
+        description="Cadastre a empresa e o primeiro administrador. A BAIFER e as demais ficam isoladas: cada login abre só o painel daquela empresa."
       />
       <form
         onSubmit={onSubmit}
@@ -99,7 +99,7 @@ export default function EmpresasPage() {
           onChange={(e) => setSlug(e.target.value)}
           placeholder="ex.: unica"
         />
-        <p className="text-xs text-ink-muted">Letras minúsculas, números e hífen. Usado no login.</p>
+        <p className="text-xs text-ink-muted">Letras minúsculas, números e hífen.</p>
         <Field
           label="Nome do administrador"
           name="adminName"

@@ -15,12 +15,12 @@ html {
 body {
   min-height: 100%;
   overflow-x: hidden;
-  background: #f4f1ea;
+  background: #ffffff;
   color: #1a1f24;
 }
 
 *:focus-visible {
-  outline: 2px solid #1b3a4b;
+  outline: 2px solid #2ea44f;
   outline-offset: 2px;
 }
 
@@ -33,9 +33,9 @@ body {
   max-width: 100%;
   max-height: min(70vh, 44rem);
   -webkit-overflow-scrolling: touch;
-  border: 1px solid #d9d3c7;
+  border: 1px solid #1a1f24;
   border-radius: 8px;
-  background: #fffdf8;
+  background: #ffffff;
 }
 
 .fiscal-grid {
@@ -48,8 +48,8 @@ body {
 
 .fiscal-grid th,
 .fiscal-grid td {
-  border-bottom: 1px solid #d9d3c7;
-  border-right: 1px solid #eee9df;
+  border-bottom: 1px solid #dce3de;
+  border-right: 1px solid #eaefec;
   padding: 0.45rem 0.55rem;
   white-space: nowrap;
   vertical-align: middle;
@@ -59,42 +59,43 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #f4f1ea;
+  background: #f1f5f2;
+  border-bottom: 2px solid #1a1f24;
   font-weight: 500;
-  color: #5c6570;
+  color: #1a1f24;
   text-align: left;
 }
 
 .fiscal-grid tbody tr:hover td {
-  background: #f8f5ee;
+  background: #f1f8f3;
 }
 
 .fiscal-grid tbody tr[data-selected="true"] td {
-  background: #e8eef1;
+  background: #dff0e4;
 }
 
 .fiscal-grid tbody tr:focus-visible {
-  outline: 2px solid #1b3a4b;
+  outline: 2px solid #2ea44f;
   outline-offset: -2px;
 }
 
 .fiscal-grid .sticky-col {
   position: sticky;
   z-index: 1;
-  background: #fffdf8;
+  background: #ffffff;
 }
 
 .fiscal-grid th.sticky-col {
   z-index: 3;
-  background: #f4f1ea;
+  background: #f1f5f2;
 }
 
 .fiscal-grid tbody tr:hover .sticky-col {
-  background: #f8f5ee;
+  background: #f1f8f3;
 }
 
 .fiscal-grid tbody tr[data-selected="true"] .sticky-col {
-  background: #e8eef1;
+  background: #dff0e4;
 }
 
 .fiscal-grid .sticky-col-1 {

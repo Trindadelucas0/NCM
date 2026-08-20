@@ -3,77 +3,37 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType } from "react";
-import { ACTIVE_LOTE_EVENT, hrefWithLote, readActiveLote } from "@/src/lib/active-lote";
 import { ExitoMark } from "@/src/components/brand/exito-mark";
 import { Button } from "@/src/components/ui/button";
-import {
-  IconBaseFiscal,
-  IconComoUsar,
-  IconConsultar,
-  IconDivergencias,
-  IconImportar,
-  IconPanorama,
-  IconUsuarios,
-} from "./nav-icons";
+import { IconEmpresas, IconUsuarios } from "./nav-icons";
 
 type NavItem = {
   href: string;
   label: string;
-  admin?: boolean;
   icon: ComponentType<{ className?: string }>;
 };
 
-const NAV_GROUPS: { id: string; label: string; items: NavItem[] }[] = [
-  {
-    id: "visao",
-    label: "Visão",
-    items: [
-      { href: "/dashboard", label: "Panorama", icon: IconPanorama },
-      { href: "/como-usar", label: "Como usar", icon: IconComoUsar },
-    ],
-  },
-  {
-    id: "cadastro",
-    label: "Cadastro",
-    items: [
-      { href: "/consulta", label: "Consultar", icon: IconConsultar },
-      { href: "/divergencias", label: "Divergências", icon: IconDivergencias },
-      { href: "/base-fiscal", label: "Base fiscal", icon: IconBaseFiscal },
-      { href: "/importar", label: "Importar produtos", admin: true, icon: IconImportar },
-    ],
-  },
-  {
-    id: "empresa",
-    label: "Empresa",
-    items: [{ href: "/usuarios", label: "Usuários", admin: true, icon: IconUsuarios }],
-  },
+const NAV: NavItem[] = [
+  { href: "/escritorio/empresas", label: "Empresas", icon: IconEmpresas },
+  { href: "/escritorio/usuarios", label: "Usuários", icon: IconUsuarios },
 ];
 
 type Me = {
   name: string;
   email: string;
-  role: "admin" | "consulta" | "superadmin";
-  companyName: string | null;
+  role: string;
 };
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function EscritorioShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState("");
-  const [lote, setLote] = useState("");
-
-  useEffect(() => {
-    const sync = () => setLote(readActiveLote() ?? "");
-    sync();
-    window.addEventListener(ACTIVE_LOTE_EVENT, sync);
-    return () => window.removeEventListener(ACTIVE_LOTE_EVENT, sync);
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -86,6 +46,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
         if (!res.ok) {
           throw new Error(json.error?.message ?? "Não foi possível validar a sessão");
+        }
+        if (json.data?.role !== "superadmin") {
+          router.push("/dashboard");
+          return;
         }
         setMe(json.data);
         setError("");
@@ -116,14 +80,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
-  const groups = NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => !item.admin || me?.role === "admin"),
-  })).filter((group) => group.items.length > 0);
-
   return (
     <div className="min-h-screen min-w-0 bg-paper">
-      <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-3 focus:py-2">
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-3 focus:py-2"
+      >
         Ir para o conteúdo
       </a>
       <header className="sticky top-0 z-50 border-b-2 border-line-strong bg-paper-raised/95 backdrop-blur">
@@ -133,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md border border-line bg-white md:hidden"
               aria-expanded={open}
-              aria-controls="menu-principal"
+              aria-controls="menu-escritorio"
               onClick={() => setOpen((v) => !v)}
             >
               <span className="sr-only">{open ? "Fechar menu" : "Abrir menu"}</span>
@@ -143,22 +105,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="block h-0.5 w-5 bg-ink" />
               </span>
             </button>
-            <Link
-              href={hrefWithLote("/dashboard", lote)}
-              className="flex min-w-0 items-center gap-2.5 leading-tight"
-            >
+            <Link href="/escritorio/empresas" className="flex min-w-0 items-center gap-2.5 leading-tight">
               <ExitoMark size={34} priority />
-              <span className="block truncate font-display text-base text-brand sm:text-lg">
-                Auditor Fiscal
+              <span className="min-w-0">
+                <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+                  Escritório
+                </span>
+                <span className="block truncate font-display text-base text-brand sm:text-lg">
+                  Administrador
+                </span>
               </span>
             </Link>
           </div>
           <div className="flex min-w-0 items-center gap-3 text-sm">
             <div className="min-w-0 text-right">
-              <p className="truncate font-medium text-ink">{me?.companyName ?? "…"}</p>
-              <p className="hidden truncate text-ink-muted sm:block">
-                {me ? `${me.name} · ${me.role}` : "…"}
-              </p>
+              <p className="truncate font-medium text-ink">Painel das empresas</p>
+              <p className="hidden truncate text-ink-muted sm:block">{me ? me.name : "…"}</p>
             </div>
             <Button variant="secondary" className="hidden shrink-0 md:inline-flex" onClick={logout}>
               Sair
@@ -178,50 +140,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="mx-auto flex w-full min-w-0 max-w-[1600px] flex-col md:flex-row md:items-stretch">
         <nav
-          id="menu-principal"
-          aria-label="Principal"
+          id="menu-escritorio"
+          aria-label="Escritório"
           className={`${
             open
               ? "fixed left-0 top-14 z-50 flex max-h-[calc(100dvh-3.5rem)] w-[min(18rem,88vw)]"
               : "hidden"
           } flex-col overflow-y-auto border-r border-line-strong bg-paper-raised px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-panel md:sticky md:top-14 md:z-auto md:flex md:h-[calc(100dvh-3.5rem)] md:w-60 md:max-h-none md:shrink-0 md:self-start md:shadow-none`}
         >
-          <div className="grid content-start gap-5">
-            {groups.map((group) => (
-              <div key={group.id}>
-                <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-                  {group.label}
-                </p>
-                <ul className="grid content-start gap-1">
-                  {group.items.map((item) => {
-                    const active = isActivePath(pathname, item.href);
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={hrefWithLote(item.href, lote)}
-                          aria-current={active ? "page" : undefined}
-                          onClick={() => setOpen(false)}
-                          className={`flex min-h-11 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition ${
-                            active
-                              ? "bg-brand text-white"
-                              : "text-ink hover:bg-brand-soft"
-                          }`}
-                        >
-                          <Icon className="shrink-0" />
-                          {item.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">Cadastro</p>
+          <ul className="grid content-start gap-1">
+            {NAV.map((item) => {
+              const active = isActivePath(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                    className={`flex min-h-11 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition ${
+                      active ? "bg-brand text-white" : "text-ink hover:bg-brand-soft"
+                    }`}
+                  >
+                    <Icon className="shrink-0" />
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
           <div className="mt-auto pt-6 md:hidden">
-            <p className="mb-3 truncate px-3 text-sm text-ink-muted">
-              {me ? `${me.name} · ${me.role}` : ""}
-            </p>
+            <p className="mb-3 truncate px-3 text-sm text-ink-muted">{me?.name ?? ""}</p>
             <Button variant="secondary" className="w-full" onClick={logout}>
               Sair
             </Button>

@@ -76,7 +76,7 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
     setData(null);
     fetch("/api/auth/me", { signal: controller.signal })
       .then((r) => r.json())
-      .then((json) => setRole(json.data?.role ?? "consulta"))
+      .then((json) => setRole(json.data?.role === "admin" ? "admin" : "consulta"))
       .catch((err: Error) => {
         if (err.name === "AbortError") return;
       });
@@ -153,7 +153,7 @@ export function ProductFicha({ mode }: { mode: "ficha" | "entrada" }) {
           </>
         }
       />
-      <p className="rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink-muted">
+      <p className="rounded-md border border-line bg-paper-sunken px-3 py-2 text-sm text-ink-muted">
         A tributação correta não vem do cadastro importado. Vem da regra fiscal da empresa: um NCM, uma
         regra, para todos os produtos daquele NCM. Se o NCM no ERP estiver errado, CST, MVA e a entrada saem
         errados juntos.

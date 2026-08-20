@@ -37,3 +37,7 @@ O MVP é web. As regras estão na API, então um futuro cliente Capacitor, Flutt
 
 **Decisão:** produtos só por importação.  
 **Motivo:** a aba Planilha_Classes_Fiscais não é fonte confiável neste MVP.
+
+**Decisão:** login só com e-mail e senha; admin do escritório separado da BAIFER.  
+**Motivo:** a BAIFER é uma empresa auditada, não o dono do sistema.  
+**Alternativas:** seletor de empresa no login (rejeitado: expunha a lista e misturava papéis).

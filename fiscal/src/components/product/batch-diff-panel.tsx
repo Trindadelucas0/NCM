@@ -100,7 +100,7 @@ export function BatchDiffPanel({ lote, summaryOnly = false }: { lote: string | n
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md bg-paper px-3 py-2">
+    <div className="rounded-md bg-paper-sunken px-3 py-2">
       <dt className="text-[11px] uppercase tracking-wide text-ink-muted">{label}</dt>
       <dd className="font-display text-xl tabular">{value}</dd>
     </div>

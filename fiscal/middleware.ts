@@ -3,14 +3,14 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/src/lib/constants";
 
 const PUBLIC = ["/login"];
+const PUBLIC_ASSETS = ["/favicon.ico", "/icon", "/icon.png", "/exito-logo.png"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico" ||
-    pathname === "/icon"
+    PUBLIC_ASSETS.includes(pathname)
   ) {
     return NextResponse.next();
   }
@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
   }
   if (token && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
   return NextResponse.next();

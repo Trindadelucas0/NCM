@@ -76,19 +76,19 @@ export type ExportItemInput = {
 };
 
 export const EXPORT_COLORS = {
-  brand: "1B3A4B",
-  paper: "F4F1EA",
-  raised: "FFFDF8",
+  brand: "2EA44F",
+  paper: "F1F5F2",
+  raised: "FFFFFF",
   ink: "1A1F24",
   muted: "5C6570",
-  line: "D9D3C7",
+  line: "C3CEC7",
   white: "FFFFFF",
   bad: "9B2C2C",
   badBg: "F8E8E8",
-  ok: "1F6B4A",
-  okBg: "E8F4EE",
-  warn: "8A5A12",
-  warnBg: "F8EFD9",
+  ok: "1F7A45",
+  okBg: "E4F5EA",
+  warn: "1A1F24",
+  warnBg: "FFF6D6",
 } as const;
 
 export function ruleMva(rule: FiscalRule | null | undefined): string | null {

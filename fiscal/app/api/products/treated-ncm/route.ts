@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { digitsOnly } from "@/src/server/product-query";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, requireUser } from "@/src/server/tenant";
+import { HttpError, requireCompanySession } from "@/src/server/tenant";
 import { markProductsTreated } from "@/src/server/treated-mark";
 
 const schema = z.object({
@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const body = schema.parse(await request.json());
     const ncm = digitsOnly(body.ncm);
     if (!ncm) {

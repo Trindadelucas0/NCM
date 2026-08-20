@@ -9,7 +9,7 @@ export function DiffTable({ diffs }: { diffs: FieldDiff[] }) {
         <caption className="sr-only">
           Campos errados no cadastro importado e valor correto da regra fiscal
         </caption>
-        <thead className="bg-paper text-ink-muted">
+        <thead className="bg-paper-sunken text-ink-muted">
           <tr>
             <th scope="col" className="px-3 py-2.5 font-medium">
               Campo

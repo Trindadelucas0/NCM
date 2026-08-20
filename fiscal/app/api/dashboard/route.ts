@@ -2,11 +2,11 @@ import { activeBatchForRequest } from "@/src/server/batch";
 import { withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
 import { dashboardTotalsFromBatch } from "@/src/server/product-query";
-import { requireUser } from "@/src/server/tenant";
+import { requireCompanySession } from "@/src/server/tenant";
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const batch = await activeBatchForRequest(user.companyId, request);
     const ruleCount = await withTenant(user.companyId, (db) =>
       db.fiscalNcmRule.count({ where: { companyId: user.companyId } }),

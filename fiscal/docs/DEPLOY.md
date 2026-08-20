@@ -14,6 +14,7 @@ Variáveis (valores secretos nunca neste arquivo):
 - `DB_HOST` `DB_PORT` `DB_NAME` `DB_USER` `DB_PASSWORD`
 - `SESSION_SECRET`
 - `SEED_ADMIN_EMAIL` `SEED_ADMIN_PASSWORD`
+- `SEED_SUPERADMIN_EMAIL` `SEED_SUPERADMIN_PASSWORD`
 - `NODE_ENV=production`
 
 Produção deve usar HTTPS para o cookie `Secure`.  

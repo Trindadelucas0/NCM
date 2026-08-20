@@ -22,13 +22,13 @@ O Auditor Fiscal BAIFER é um sistema interno do escritório. Ele **não substit
 - Não conversa direto com o ERP Santri.
 - Não calcula ICMS-ST, DIFAL ou DARE.
 - Não é um aplicativo de celular (o site funciona no telefone, mas não há app nas lojas).
-- Não cadastra a Loja das Máquinas na tela — o banco já prevê outra empresa no futuro.
 
 ## Quem acessa
 
-Somente a equipe do escritório, com login. Há dois papéis:
+A tela inicial é só login. Cada e-mail abre o painel daquela conta:
 
-- **Administrador:** importa cadastro e vincula regra quando o NCM tem duas hipóteses.
+- **Administrador do escritório:** vê as empresas, cadastra empresa e usuários. Não entra na conferência fiscal.
+- **Administrador da empresa** (BAIFER, Loja, etc.): importa cadastro e vincula regra quando o NCM tem duas hipóteses. Cadastra usuários só da própria empresa.
 - **Consulta:** lê, busca, exporta Excel/PDF e marca item/NCM como já tratado.
 
 ## Como os dados são protegidos

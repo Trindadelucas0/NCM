@@ -118,6 +118,36 @@ function ruleData(spec: CompanySeed, rule: ExtractedRule) {
   };
 }
 
+async function ensureSuperAdmin() {
+  const email = process.env.SEED_SUPERADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.SEED_SUPERADMIN_PASSWORD;
+  if (!email || !password) {
+    throw new Error(
+      "SEED_SUPERADMIN_EMAIL e SEED_SUPERADMIN_PASSWORD são obrigatórios (não commitar senha no código).",
+    );
+  }
+  const existing = await prisma.user.findFirst({ where: { email } });
+  if (existing) {
+    if (existing.role !== "superadmin" || existing.companyId) {
+      throw new Error(`O e-mail ${email} já existe e não é o administrador do escritório.`);
+    }
+    console.log(`Seed OK: escritório já cadastrado (${email}).`);
+    return;
+  }
+  const passwordHash = await bcrypt.hash(password, 12);
+  await prisma.user.create({
+    data: {
+      id: "cm_office_superadmin",
+      companyId: null,
+      email,
+      passwordHash,
+      name: "Administrador do escritório",
+      role: "superadmin",
+    },
+  });
+  console.log(`Seed OK: escritório ${email}`);
+}
+
 async function ensureUser(
   spec: CompanySeed,
   id: string,
@@ -127,9 +157,14 @@ async function ensureUser(
   passwordHash: string,
 ) {
   const existing = await prisma.user.findFirst({
-    where: { companyId: spec.id, email },
+    where: { email },
   });
-  if (existing) return;
+  if (existing) {
+    if (existing.companyId !== spec.id) {
+      throw new Error(`E-mail ${email} já pertence a outra empresa. E-mails são únicos no sistema.`);
+    }
+    return;
+  }
   await prisma.user.create({
     data: {
       id,
@@ -239,6 +274,7 @@ async function main() {
   if (wipeCadastro) {
     console.warn("ATENÇÃO: SEED_RESET_CADASTRO=1 vai apagar lotes importados. Regras e usuários permanecem.");
   }
+  await ensureSuperAdmin();
   const hash = await bcrypt.hash(password, 12);
   for (const spec of COMPANIES) {
     await seedCompany(spec, hash, wipeCadastro);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { postLoginPath } from "@/src/lib/auth-home";
 import {
   authenticate,
   createSession,
@@ -12,13 +13,6 @@ import { loginAllowed, loginFailed, loginSucceeded } from "@/src/server/rate-lim
 const schema = z.object({
   email: z.string().email().max(180),
   password: z.string().min(1).max(200),
-  company: z
-    .string()
-    .trim()
-    .min(2)
-    .max(40)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i)
-    .transform((value) => value.toLowerCase()),
 });
 
 export async function POST(request: NextRequest) {
@@ -34,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const body = schema.parse(await request.json());
-    const user = await authenticate(body.email, body.password, body.company);
+    const user = await authenticate(body.email, body.password);
     if (!user) {
       loginFailed(ip);
       return NextResponse.json(
@@ -49,13 +43,14 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: user.role,
       companyName: user.companyName,
+      redirectTo: postLoginPath(user.role),
     });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: { code: "VALIDATION", message: "Informe e-mail, senha e empresa." } },
+        { success: false, error: { code: "VALIDATION", message: "Informe e-mail e senha." } },
         { status: 400 },
       );
     }

@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, requireAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, requireAdmin, requireCompanySession } from "@/src/server/tenant";
 import { withTenant } from "@/src/server/db";
 import { ruleBodySchema, ruleWriteData } from "@/src/server/rule-write";
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     const url = new URL(request.url);
     const q = (url.searchParams.get("q") ?? "").trim();
     const situacao = (url.searchParams.get("situacao") ?? "").trim();
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const body = ruleBodySchema.parse(await request.json());
     const data = ruleWriteData(user.companyId, body);

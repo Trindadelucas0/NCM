@@ -5,11 +5,14 @@ import { Button } from "@/src/components/ui/button";
 import { Field } from "@/src/components/ui/field";
 import { PageHeader } from "@/src/components/ui/page-header";
 
+type CompanyRow = { id: string; name: string; slug: string };
 type UserRow = { id: string; name: string; email: string; role: "admin" | "consulta"; createdAt: string };
 
-export default function UsuariosPage() {
+export default function EscritorioUsuariosPage() {
   const [forbidden, setForbidden] = useState(false);
+  const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [companyId, setCompanyId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -19,29 +22,57 @@ export default function UsuariosPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "consulta">("consulta");
 
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      const me = await fetch("/api/auth/me").then((r) => r.json());
-      if (me.data?.role !== "admin") {
-        setForbidden(true);
-        return;
-      }
-      const res = await fetch("/api/users");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? "Falha ao listar usuários.");
-      setUsers(json.data.users ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao carregar.");
-    } finally {
-      setLoading(false);
+  async function loadCompanies() {
+    const me = await fetch("/api/auth/me").then((r) => r.json());
+    if (me.data?.role !== "superadmin") {
+      setForbidden(true);
+      return;
     }
+    const res = await fetch("/api/companies");
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message ?? "Falha ao listar empresas.");
+    const list = (json.data.companies ?? []) as CompanyRow[];
+    setCompanies(list);
+    setCompanyId((current) => current || list[0]?.id || "");
+  }
+
+  async function loadUsers(id: string) {
+    if (!id) {
+      setUsers([]);
+      return;
+    }
+    const res = await fetch(`/api/users?companyId=${encodeURIComponent(id)}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message ?? "Falha ao listar usuários.");
+    setUsers(json.data.users ?? []);
   }
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    loadCompanies()
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    loadUsers(companyId).catch((err: Error) => {
+      if (!cancelled) setError(err.message);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId]);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -52,16 +83,16 @@ export default function UsuariosPage() {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role, companyId }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error?.message ?? "Não foi possível cadastrar.");
-      setSuccess(`Usuário ${json.data.user.email} cadastrado nesta empresa.`);
+      setSuccess(`Usuário ${json.data.user.email} cadastrado.`);
       setName("");
       setEmail("");
       setPassword("");
       setRole("consulta");
-      await load();
+      await loadUsers(companyId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível cadastrar.");
     } finally {
@@ -71,21 +102,42 @@ export default function UsuariosPage() {
 
   if (forbidden) {
     return (
-      <p className="text-sm text-status-bad">Somente administradores podem cadastrar usuários.</p>
+      <p className="text-sm text-status-bad">Somente o administrador do escritório cadastra usuários de qualquer empresa.</p>
     );
   }
 
   return (
     <div className="grid gap-8">
       <PageHeader
-        kicker="Administração"
+        kicker="Escritório"
         title="Usuários"
-        description="Usuários desta empresa. Não dá para ver ou criar login de outra empresa."
+        description="Escolha a empresa e cadastre o login dela. E-mail é único no sistema."
       />
       <form
         onSubmit={onSubmit}
         className="grid w-full max-w-xl gap-4 rounded-lg border border-line bg-white p-4 sm:p-6"
       >
+        <label className="grid gap-1.5 text-sm">
+          <span className="font-medium text-ink">Empresa</span>
+          <select
+            name="companyId"
+            required
+            disabled={companies.length === 0}
+            className="min-h-11 rounded-md border border-line-strong bg-white px-3"
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+          >
+            {companies.length === 0 ? (
+              <option value="">Cadastre uma empresa primeiro</option>
+            ) : (
+              companies.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))
+            )}
+          </select>
+        </label>
         <Field label="Nome" name="name" required value={name} onChange={(e) => setName(e.target.value)} />
         <Field
           label="E-mail"
@@ -114,7 +166,7 @@ export default function UsuariosPage() {
             onChange={(e) => setRole(e.target.value as "admin" | "consulta")}
           >
             <option value="consulta">Consulta</option>
-            <option value="admin">Administrador</option>
+            <option value="admin">Administrador da empresa</option>
           </select>
         </label>
         {error ? (
@@ -123,7 +175,7 @@ export default function UsuariosPage() {
           </p>
         ) : null}
         {success ? <p className="text-sm text-status-ok">{success}</p> : null}
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || !companyId}>
           {saving ? "Cadastrando…" : "Cadastrar usuário"}
         </Button>
       </form>

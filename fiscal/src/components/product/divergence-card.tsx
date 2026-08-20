@@ -52,7 +52,7 @@ export function DivergenceCard({ item }: { item: DivergenceItem }) {
         <StatusBadge status={item.status} />
       </header>
 
-      <dl className="grid gap-3 border-b border-line bg-paper px-4 py-3 sm:grid-cols-3">
+      <dl className="grid gap-3 border-b border-line bg-paper-sunken px-4 py-3 sm:grid-cols-3">
         <Meta
           label="NCM no cadastro"
           value={item.ncmOriginal || item.ncm || "(vazio)"}
@@ -102,7 +102,7 @@ export function DivergenceCard({ item }: { item: DivergenceItem }) {
         ) : null}
 
         {item.correto && item.diffs.length > 0 ? (
-          <dl className="grid gap-3 rounded-md border border-line bg-paper px-3 py-3 sm:grid-cols-4">
+          <dl className="grid gap-3 rounded-md border border-line bg-paper-sunken px-3 py-3 sm:grid-cols-4">
             <Meta label="CST entrada correto" value={item.correto.cstEntrada ?? "—"} />
             <Meta label="CST saída correto" value={item.correto.cstSaida ?? "—"} />
             <Meta label="CFOP saída correto" value={item.correto.cfopSaida ?? "—"} />

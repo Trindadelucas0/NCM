@@ -99,7 +99,7 @@ export function ProductFilters({
               className={`min-h-11 rounded-md border px-2.5 text-sm font-medium transition ${
                 active
                   ? "border-brand bg-brand text-white"
-                  : "border-line bg-white text-ink hover:bg-paper"
+                  : "border-line-strong bg-white text-ink hover:bg-brand-soft"
               }`}
             >
               {chip.label}
@@ -118,7 +118,7 @@ export function ProductFilters({
           className={`min-h-11 rounded-md border px-2.5 text-sm font-medium ${
             values.tratado === "nao"
               ? "border-brand bg-brand text-white"
-              : "border-line bg-white text-ink hover:bg-paper"
+              : "border-line-strong bg-white text-ink hover:bg-brand-soft"
           }`}
         >
           Ocultar tratados

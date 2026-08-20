@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.2.0 — 19/08/2026
+
+Adicionado:
+
+- Administrador do escritório (`superadmin`), separado da BAIFER, com painel em `/escritorio`.
+- Cadastro de empresas e de usuários de qualquer empresa só nesse painel.
+
+Alterado:
+
+- A tela inicial é só login (e-mail e senha). Depois do login, cada conta abre o painel cadastrado.
+- Admin da empresa (BAIFER, Loja, etc.) não lista nem cria outras empresas.
+- E-mail único no sistema.
+
+Banco:
+
+- Papel `superadmin`; `company_id` opcional em `users` e `sessions`.
+- Unique em `users.email`.
+
 ## v1.1.0 — 19/08/2026
 
 Adicionado:

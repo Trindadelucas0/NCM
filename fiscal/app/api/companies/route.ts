@@ -5,7 +5,7 @@ import { hashPassword } from "@/src/server/auth";
 import { isValidSlug, normalizeSlug } from "@/src/server/company-slug";
 import { prisma, withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, requireAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, requireSuperAdmin, requireUser } from "@/src/server/tenant";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -18,7 +18,7 @@ const createSchema = z.object({
 export async function GET() {
   try {
     const user = await requireUser();
-    requireAdmin(user);
+    requireSuperAdmin(user);
     const companies = await prisma.company.findMany({
       select: { id: true, name: true, slug: true, createdAt: true },
       orderBy: { name: "asc" },
@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const actor = await requireUser();
-    requireAdmin(actor);
+    requireSuperAdmin(actor);
     const body = createSchema.parse(await request.json());
     const slug = normalizeSlug(body.slug);
     if (!isValidSlug(slug)) {
@@ -42,8 +42,12 @@ export async function POST(request: Request) {
     if (existing) {
       throw new HttpError(409, "CONFLICT", "Já existe uma empresa com este identificador.");
     }
-    const companyId = `c${randomBytes(12).toString("hex")}`;
     const email = body.adminEmail.trim().toLowerCase();
+    const emailTaken = await prisma.user.findFirst({ where: { email }, select: { id: true } });
+    if (emailTaken) {
+      throw new HttpError(409, "CONFLICT", "Já existe um usuário com este e-mail.");
+    }
+    const companyId = `c${randomBytes(12).toString("hex")}`;
     const passwordHash = await hashPassword(body.adminPassword);
     const created = await withTenant(companyId, async (db) => {
       const company = await db.company.create({

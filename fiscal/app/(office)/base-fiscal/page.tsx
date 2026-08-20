@@ -238,7 +238,7 @@ export default function BaseFiscalPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Ex.: 32141010 ou Tintas"
-              className="min-h-11 rounded-md border border-line bg-white px-3 text-base md:text-sm"
+              className="min-h-11 rounded-md border border-line-strong bg-white px-3 text-base md:text-sm"
             />
           </div>
           <div className="grid gap-1.5">
@@ -249,7 +249,7 @@ export default function BaseFiscalPage() {
               id="filtro-sit"
               value={situacao}
               onChange={(e) => setSituacao(e.target.value)}
-              className="min-h-11 rounded-md border border-line bg-white px-3 text-base md:text-sm"
+              className="min-h-11 rounded-md border border-line-strong bg-white px-3 text-base md:text-sm"
             >
               {SITUACOES.map((s) => (
                 <option key={s.value} value={s.value}>

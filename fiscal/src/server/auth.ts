@@ -11,12 +11,32 @@ const SESSION_HOURS = 8;
 
 export type AuthUser = {
   id: string;
-  companyId: string;
+  companyId: string | null;
   email: string;
   name: string;
-  role: "admin" | "consulta";
-  companyName: string;
+  role: "admin" | "consulta" | "superadmin";
+  companyName: string | null;
 };
+
+export type CompanyAuthUser = AuthUser & { companyId: string; companyName: string };
+
+function toAuthUser(user: {
+  id: string;
+  companyId: string | null;
+  email: string;
+  name: string;
+  role: "admin" | "consulta" | "superadmin";
+  company: { name: string } | null;
+}): AuthUser {
+  return {
+    id: user.id,
+    companyId: user.companyId,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    companyName: user.company?.name ?? null,
+  };
+}
 
 export function hashSessionToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -37,55 +57,41 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-export async function authenticate(
-  email: string,
-  password: string,
-  companySlug: string,
-): Promise<AuthUser | null> {
+export async function authenticate(email: string, password: string): Promise<AuthUser | null> {
   const normalized = email.trim().toLowerCase();
-  const slug = companySlug.trim().toLowerCase();
-  if (!slug) {
-    await bcrypt.hash(password, 10);
-    return null;
-  }
-  const company = await prisma.company.findFirst({ where: { slug } });
-  if (!company) {
-    await bcrypt.hash(password, 10);
-    return null;
-  }
   const user = await prisma.user.findFirst({
-    where: { email: normalized, companyId: company.id },
+    where: { email: normalized },
     include: { company: true },
   });
   if (!user) {
     await bcrypt.hash(password, 10);
     return null;
   }
+  if (user.role !== "superadmin" && !user.companyId) {
+    await bcrypt.hash(password, 10);
+    return null;
+  }
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) return null;
-  return {
-    id: user.id,
-    companyId: user.companyId,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    companyName: user.company.name,
-  };
+  return toAuthUser(user);
 }
 
 export async function createSession(user: AuthUser): Promise<string> {
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000);
+  const data = {
+    companyId: user.companyId,
+    userId: user.id,
+    tokenHash,
+    expiresAt,
+  };
+  if (!user.companyId) {
+    await prisma.session.create({ data });
+    return token;
+  }
   await withTenant(user.companyId, async (db) => {
-    await db.session.create({
-      data: {
-        companyId: user.companyId,
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
-    });
+    await db.session.create({ data });
   });
   return token;
 }
@@ -104,14 +110,7 @@ export async function getUserFromToken(token: string | undefined): Promise<AuthU
     include: { user: { include: { company: true } } },
   });
   if (!session) return null;
-  return {
-    id: session.user.id,
-    companyId: session.user.companyId,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role,
-    companyName: session.user.company.name,
-  };
+  return toAuthUser(session.user);
 }
 
 export async function readSessionCookie(): Promise<string | undefined> {
@@ -138,7 +137,7 @@ export function sessionCookieOptions() {
 }
 
 export function requireRole(user: AuthUser, role: "admin"): void {
-  if (user.role !== role) {
+  if (user.role !== role || !user.companyId) {
     const error = new Error("FORBIDDEN") as Error & { status: number };
     error.status = 403;
     throw error;

@@ -1,24 +1,43 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { hashPassword } from "@/src/server/auth";
-import { withTenant } from "@/src/server/db";
+import { hashPassword, type AuthUser } from "@/src/server/auth";
+import { prisma, withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
-import { HttpError, requireAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, requireAdmin, requireSuperAdmin, requireUser } from "@/src/server/tenant";
 
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().email().max(180),
   password: z.string().min(8).max(200),
   role: z.enum(["admin", "consulta"]),
+  companyId: z.string().trim().min(1).max(40).optional(),
 });
 
-export async function GET() {
+async function targetCompanyId(actor: AuthUser, requested?: string) {
+  if (actor.role === "superadmin") {
+    requireSuperAdmin(actor);
+    if (!requested) {
+      throw new HttpError(400, "VALIDATION", "Informe a empresa do usuário.");
+    }
+    const company = await prisma.company.findFirst({ where: { id: requested }, select: { id: true } });
+    if (!company) {
+      throw new HttpError(404, "NOT_FOUND", "Empresa não encontrada.");
+    }
+    return company.id;
+  }
+  requireAdmin(actor);
+  return actor.companyId as string;
+}
+
+export async function GET(request: Request) {
   try {
     const user = await requireUser();
-    requireAdmin(user);
-    const users = await withTenant(user.companyId, (db) =>
+    const url = new URL(request.url);
+    const requested = url.searchParams.get("companyId") ?? undefined;
+    const companyId = await targetCompanyId(user, requested);
+    const users = await withTenant(companyId, (db) =>
       db.user.findMany({
-        where: { companyId: user.companyId },
+        where: { companyId },
         select: { id: true, name: true, email: true, role: true, createdAt: true },
         orderBy: [{ role: "asc" }, { name: "asc" }],
       }),
@@ -32,21 +51,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const actor = await requireUser();
-    requireAdmin(actor);
     const body = createSchema.parse(await request.json());
+    const companyId = await targetCompanyId(actor, body.companyId);
     const email = body.email.trim().toLowerCase();
     const passwordHash = await hashPassword(body.password);
-    const created = await withTenant(actor.companyId, async (db) => {
-      const duplicate = await db.user.findFirst({
-        where: { companyId: actor.companyId, email },
-        select: { id: true },
-      });
-      if (duplicate) {
-        throw new HttpError(409, "CONFLICT", "Já existe um usuário com este e-mail nesta empresa.");
-      }
+    const duplicate = await prisma.user.findFirst({
+      where: { email },
+      select: { id: true },
+    });
+    if (duplicate) {
+      throw new HttpError(409, "CONFLICT", "Já existe um usuário com este e-mail.");
+    }
+    const created = await withTenant(companyId, async (db) => {
       return db.user.create({
         data: {
-          companyId: actor.companyId,
+          companyId,
           email,
           passwordHash,
           name: body.name.trim(),
@@ -58,7 +77,7 @@ export async function POST(request: Request) {
     return jsonOk({ user: created }, 201);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return jsonError(new HttpError(409, "CONFLICT", "Já existe um usuário com este e-mail nesta empresa."));
+      return jsonError(new HttpError(409, "CONFLICT", "Já existe um usuário com este e-mail."));
     }
     return jsonError(error);
   }

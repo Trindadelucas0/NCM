@@ -3,11 +3,11 @@ import { LONG_TX, withTenant } from "@/src/server/db";
 import { jsonError, jsonOk } from "@/src/server/http";
 import { assertSafeUpload } from "@/src/server/import-cadastro";
 import { dedupeParsedRules, parseRulesBuffer } from "@/src/server/import-rules";
-import { HttpError, requireAdmin, requireUser } from "@/src/server/tenant";
+import { HttpError, requireAdmin, requireCompanySession } from "@/src/server/tenant";
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireCompanySession();
     requireAdmin(user);
     const form = await request.formData();
     const file = form.get("file");
